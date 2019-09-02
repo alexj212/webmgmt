@@ -1,0 +1,3 @@
+[submodule "submodules/termpage"]
+	path = submodules/termpage
+	url = https://github.com/tautvilas/termpage.git
