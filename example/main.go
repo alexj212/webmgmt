@@ -63,6 +63,8 @@ func main() {
         return s == "alex" && s2 == "bambam"
     }
 
+    commands := []string{"http", "user", "prompt", "link", "ticker", "image", "raw", "commands", "history"}
+
     config.HandleCommand = func(client *webmgmt.Client, cmd string) {
         // loge.Info("handleMessage  - authenticated user message.Payload: " + cmd)
 
@@ -70,14 +72,17 @@ func main() {
 
         case "ticker":
             toggleTicker(client)
+
         case "image":
             client.Send(webmgmt.AppendRawText("<img width=\"200\" height=\"200\" src=\"https://avatars1.githubusercontent.com/u/174203?s=200&v=4\" alt=\"me\"/>", nil))
+
         case "raw":
-            commands := []string{"cmd1", "cmd2", "cmd3"}
             client.Send(webmgmt.AppendRawText("<img width=\"100\" height=\"100\" src=\"https://avatars1.githubusercontent.com/u/174203?s=100&v=4\" alt=\"me\"/>", commands))
+
         case "commands":
-            commands1 := []string{"cmdA", "cmdB", "cmdC"}
-            client.Send(webmgmt.AppendRawText("Set Commands", commands1))
+            client.Send(webmgmt.AppendRawText("Set Commands", commands))
+
+
         case "link":
             client.Send(webmgmt.AppendRawText(webmgmt.Link("http://www.slashdot.org", webmgmt.Color("orange", "slashdot")), nil))
 
