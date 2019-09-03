@@ -59,7 +59,7 @@ binaries: example ## build binaries in bin dir
 create_dir:
 	@mkdir -p $(BIN_DIR)
 	@rm -f $(BIN_DIR)/web
-	@ln -s ../webmgmt/web $(BIN_DIR)/web
+	@ln -s ../web $(BIN_DIR)/web
 
 build_app: create_dir
 	go build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)

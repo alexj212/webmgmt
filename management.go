@@ -8,6 +8,7 @@ import (
     "sync"
 
     "github.com/gorilla/mux"
+    "github.com/pkg/errors"
     "github.com/potakhov/loge"
 )
 
@@ -42,6 +43,14 @@ func (cfg *Config) Display() {
     fmt.Println("-------------------------------------")
 }
 func NewMgmtApp(name, instanceId string, config *Config) (*MgmtApp, error) {
+
+    if config == nil {
+        return nil, errors.Errorf("cannot create MgmtApp with nil config")
+    }
+    if _, err := os.Stat(config.StaticHtmlDir); os.IsNotExist(err) {
+        return nil, err
+    }
+
 
     c := &MgmtApp{}
     c.Config = config

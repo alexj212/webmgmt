@@ -114,7 +114,7 @@ func IsPrivateSubnet(ipAddress net.IP) bool {
     return false
 }
 
-func GetIPAdress(r *http.Request) string {
+func GetIPAddress(r *http.Request) string {
     var ip = ""
     for _, h := range []string{"X-Forwarded-For", "X-Real-Ip"} {
         addresses := strings.Split(r.Header.Get(h), ",")

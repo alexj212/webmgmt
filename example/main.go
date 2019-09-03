@@ -8,8 +8,7 @@ import (
     "syscall"
     "time"
 
-    "github.com/alexj212/webmgmt/webmgmt"
-
+    "github.com/alexj212/webmgmt"
     "github.com/potakhov/loge"
 )
 
@@ -82,7 +81,6 @@ func main() {
         case "commands":
             client.Send(webmgmt.AppendRawText("Set Commands", commands))
 
-
         case "link":
             client.Send(webmgmt.AppendRawText(webmgmt.Link("http://www.slashdot.org", webmgmt.Color("orange", "slashdot")), nil))
 
@@ -132,7 +130,7 @@ func main() {
 }
 
 func displayHistory(client *webmgmt.Client) {
-    if len(client.History) >0 {
+    if len(client.History) > 0 {
         for i, cmd := range client.History {
             client.Send(webmgmt.AppendText(fmt.Sprintf("History[%d]: %v", i, cmd), "green"))
         }
@@ -141,14 +139,13 @@ func displayHistory(client *webmgmt.Client) {
     }
 }
 
-
 func displayUserInfo(client *webmgmt.Client) {
     client.Send(webmgmt.AppendText(fmt.Sprintf("Username       : %v", client.Username()), "green"))
     client.Send(webmgmt.AppendText(fmt.Sprintf("IsAuthenticated: %v", client.IsAuthenticated()), "green"))
 }
 
 func displayHttpInfo(client *webmgmt.Client) {
-    client.Send(webmgmt.AppendText(fmt.Sprintf("GetIPAdress              : %v", webmgmt.GetIPAdress(client.HttpReq)), "green"))
+    client.Send(webmgmt.AppendText(fmt.Sprintf("GetIPAdress              : %v", webmgmt.GetIPAddress(client.HttpReq)), "green"))
     client.Send(webmgmt.AppendText(fmt.Sprintf("client.HttpReq.Host      : %v", client.HttpReq.Host), "green"))
     client.Send(webmgmt.AppendText(fmt.Sprintf("client.HttpReq.Method    : %v", client.HttpReq.Method), "green"))
     client.Send(webmgmt.AppendText(fmt.Sprintf("client.HttpReq.RemoteAddr: %v", client.HttpReq.RemoteAddr), "green"))
