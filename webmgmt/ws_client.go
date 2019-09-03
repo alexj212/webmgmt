@@ -4,6 +4,7 @@ import (
     "bytes"
     "encoding/json"
     "net/http"
+    "strings"
     "time"
 
     "github.com/gorilla/websocket"
@@ -245,6 +246,7 @@ func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
 func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
     msg := &ClientMessage{}
     err := json.Unmarshal(payload, &msg)
+    msg.Payload = strings.TrimSpace(msg.Payload)
     return msg, err
 }
 

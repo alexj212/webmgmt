@@ -66,7 +66,7 @@ func main() {
     commands := []string{"http", "user", "prompt", "link", "ticker", "image", "raw", "commands", "history"}
 
     config.HandleCommand = func(client *webmgmt.Client, cmd string) {
-        // loge.Info("handleMessage  - authenticated user message.Payload: " + cmd)
+        // loge.Info("handleMessage  - authenticated user message.Payload: [" + cmd+"]")
 
         switch cmd {
 
