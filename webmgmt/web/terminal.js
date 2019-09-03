@@ -12,9 +12,6 @@ function wsrepl(customArgs) {
     let arg = Object.assign({}, defArgs, customArgs);
 
 
-// constants
-
-
     function replyToPage(str) {
     }
 
@@ -24,7 +21,7 @@ function wsrepl(customArgs) {
     }
 
 
-    arg.sendCmd = function(val) {
+    arg.sendCmd = function (val) {
 
         // console.log("sendCmd[" + val + ']');
         if (val === ":cls") {
@@ -44,10 +41,10 @@ function wsrepl(customArgs) {
 
     arg.wsSend = function wsSend(val) {
         if (arg.ws != null) {
-            console.log('wsSend actual', val)
+            //console.log('wsSend actual', val)
             arg.ws.send(val);
         } else {
-            console.log('wsSend arg.ws is null', val)
+            //console.log('wsSend arg.ws is null', val)
         }
     };
 
@@ -86,7 +83,7 @@ function wsrepl(customArgs) {
         });
         arg.ws.addEventListener('message', function (event) {
 
-            console.log('addEventListener message>> ' + event.data);
+            // console.log('addEventListener message>> ' + event.data);
 
             let message = JSON.parse(event.data);
 
@@ -104,8 +101,12 @@ function wsrepl(customArgs) {
                 arg.wsClosedCallback();
             }
         });
-    }
+    };
 
+
+    arg.isConnected = function () {
+        return arg.ws.readyState == arg.ws.OPEN
+    }
 
     arg.setStatus = setStatus;
     arg.setTextEntryDisabled = setTextEntryDisabled;

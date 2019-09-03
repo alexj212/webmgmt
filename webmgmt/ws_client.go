@@ -3,7 +3,6 @@ package webmgmt
 import (
     "bytes"
     "encoding/json"
-    "fmt"
     "net/http"
     "time"
 
@@ -35,35 +34,24 @@ var upgrader = websocket.Upgrader{
     WriteBufferSize: 1024,
 }
 
-type MessageType int
-
-
-type ServerMessage struct {
-    Authenticated bool   `json:"authenticated"`
-    Prompt       string `json:"prompt"`
-    PromptColor         string `json:"prompt_color"`
-    Response       string `json:"response"`
-    Color         string `json:"color"`
-}
-
-type ClientMessage struct {
-    Payload string `json:"payload"`
-}
-
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-    app *MgmtApp
-    // The websocket connection.
-    conn *websocket.Conn
-    // Buffered channel of outbound messages.
-    send          chan *ServerMessage
+    app           *MgmtApp
+    conn          *websocket.Conn  // The websocket connection.
+    send          chan interface{} // Buffered channel of outbound messages.
     username      string
     authenticated bool
     loginAttempts int
+    connected     bool
+    Misc          map[string]interface{}
+    HttpReq       *http.Request
+    History       []string
 }
 
-func (c *Client) Send(msg *ServerMessage) {
-    c.send <- msg
+func (c *Client) Send(msg interface{}) {
+    if c.connected {
+        c.send <- msg
+    }
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -73,12 +61,10 @@ func (c *Client) Send(msg *ServerMessage) {
 // reads from this goroutine.
 func (c *Client) readPump() {
     defer func() {
-        c.app.hub.unregister <- c
-        err := c.conn.Close()
-        if err != nil {
-            loge.Error("Error calling conn.Close error: %v", err)
-        }
 
+        c.app.hub.unregister <- c
+        c.conn.Close()
+        c.connected = false
     }()
     c.conn.SetReadLimit(maxMessageSize)
     err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -96,6 +82,7 @@ func (c *Client) readPump() {
     })
 
     for {
+        c.connected = true
         _, message, err := c.conn.ReadMessage()
         if err != nil {
             if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -107,12 +94,10 @@ func (c *Client) readPump() {
 
         msg, err := ConvertBytesToMessage(message)
         if err == nil {
-            loge.Info("rx: %v\n", msg.Payload)
             c.handleMessage(msg)
         } else {
             loge.Error("Error converting ws data to json error: %v\n", err)
         }
-
     }
 }
 
@@ -125,13 +110,13 @@ func (c *Client) writePump() {
     ticker := time.NewTicker(pingPeriod)
     defer func() {
         ticker.Stop()
-        err := c.conn.Close()
-        if err != nil {
-            loge.Error("Error calling conn.Close error: %v", err)
-        }
+        c.conn.Close()
+        c.connected = false
 
+        c.app.Config.UnregisterUser(c)
     }()
     for {
+        c.connected = true
         select {
         case message, ok := <-c.send:
             err := c.conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -141,25 +126,14 @@ func (c *Client) writePump() {
 
             if !ok {
                 // The hub closed the channel.
-                err := c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-                if err != nil {
-                    loge.Error("Error calling conn.WriteMessage error: %v", err)
+                if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+                    return
                 }
-
-                return
             }
 
             err = c.conn.WriteJSON(message)
             if err != nil {
                 return
-            }
-            // Add queued chat messages to the current websocket message.
-            n := len(c.send)
-            for i := 0; i < n; i++ {
-                err := c.conn.WriteJSON(message)
-                if err != nil {
-                    return
-                }
             }
 
         case <-ticker.C:
@@ -180,83 +154,72 @@ func (c *Client) handleMessage(message *ClientMessage) {
     if ! c.authenticated {
 
         if c.username == "" {
-            loge.Info("handleMessage  - prompt password")
-            c.authenticated = true
-            c.username = message.Payload
-            loginPasswordMessage := &ServerMessage{Authenticated:false, Prompt:"Enter Password: ", PromptColor:"green"}
-            c.Send(loginPasswordMessage)
-            return
+
+            if message.Payload != "" {
+                c.authenticated = false
+                c.username = message.Payload
+                c.Send(SetAuthenticated(false))
+                c.Send(SetEchoOn(false))
+                c.Send(SetPrompt("Enter Password: "))
+                return
+
+            } else {
+                c.authenticated = false
+                c.Send(SetAuthenticated(false))
+                c.Send(SetEchoOn(true))
+                c.Send(SetPrompt("Enter Username: "))
+                return
+            }
         }
 
-
-        if c.username == "alex" && message.Payload == "bambam" {
-            loge.Info("handleMessage  - valid password")
+        if c.app.Config.UserAuthenticator(c, c.username, message.Payload) {
+            c.app.Config.NotifyClientAuthenticated(c)
             c.authenticated = true
-            cmdPromptMessage := &ServerMessage{Authenticated:true, Prompt:"$ ", PromptColor:"green"}
-            c.Send(cmdPromptMessage)
+
+            if c.app.Config.DefaultPrompt != "" {
+                c.Send(SetPrompt(c.app.Config.DefaultPrompt))
+            }
+
+            c.Send(SetEchoOn(true))
+            c.Send(SetHistoryMode(false))
+            c.Send(SetAuthenticated(true))
             return
         }
 
         c.authenticated = false
         c.loginAttempts++
 
-        if c.loginAttempts<3 {
-            loge.Info("handleMessage  - invalid password attempts < 3")
-            loginUsernameMessage := &ServerMessage{Authenticated:false, Prompt:"Enter Username: ", PromptColor:"green"}
-            loginUsernameMessage.Response = "Invalid Password"
-            loginUsernameMessage.Color = "red"
-            c.Send(loginUsernameMessage)
+        if c.loginAttempts < 3 {
+            c.Send(SetAuthenticated(false))
+            c.Send(SetEchoOn(false))
+            c.Send(SetPrompt("Enter Password: "))
+            c.Send(AppendText("Invalid Password", "red"))
             return
         }
 
-        loge.Info("handleMessage  - invalid password attempts >= 3")
-
-        loginUsernameMessage := &ServerMessage{Authenticated:false, Prompt:"", PromptColor:""}
-        loginUsernameMessage.Response = "Invalid Password - disconnecting client"
-        loginUsernameMessage.Color = "red"
-        c.Send(loginUsernameMessage)
-        time.Sleep( 500 * time.Millisecond)
+        c.Send(SetAuthenticated(false))
+        c.Send(SetPrompt(""))
+        c.Send(AppendText("Invalid Password - disconnecting client", "red"))
+        time.Sleep(500 * time.Millisecond)
         _ = c.conn.Close()
 
         return
     }
 
-    loge.Info("handleMessage  - authenticated user message.Payload: "+message.Payload)
-    responseMesg := &ServerMessage{Authenticated:true, Prompt:"$ ", PromptColor:"green"}
-    responseMesg.Response = fmt.Sprintf("echo: %v", message.Payload)
-    responseMesg.Color = "green"
-    c.Send(responseMesg)
-}
+    if message.Payload == "exit" || message.Payload == "logoff" {
+        c.Send(SetAuthenticated(false))
+        c.Send(SetPrompt(""))
+        c.Send(AppendText("logging off", "red"))
 
-// func (c *Client) handleMessage(message *Message) {
-//
-//     in := &api.AdminMessage{}
-//     in.Command = message.Payload
-//
-//     data := fmt.Sprintf("Executing Cmd: %v\n", in.Command)
-//     response := &Message{Payload: data, MessageType: output}
-//     c.app.hub.Broadcast(response)
-//
-//     // loge.Info("Got command: %v\n", in.Command)
-//     ctx := context.Background()
-//     resp, err := c.app.adminServer.Execute(ctx, in)
-//     if err != nil {
-//         data := fmt.Sprintf("Got Error: %v\n", err)
-//         response := &Message{Payload: data, MessageType: output}
-//         c.app.hub.Broadcast(response)
-//     } else {
-//         if resp.Status == api.AdminResponse_failed {
-//             data := fmt.Sprintf("Got AdminResponse_failed Error: %v\n", resp.Error)
-//             response := &Message{Payload: data, MessageType: output}
-//             c.app.hub.Broadcast(response)
-//         } else {
-//             data := fmt.Sprintf("Got AdminResponse_success Response\n%v\n", resp.Response)
-//             response := &Message{Payload: data, MessageType: output}
-//             c.app.hub.Broadcast(response)
-//         }
-//
-//     }
-// }
+        time.Sleep(500 * time.Millisecond)
+        _ = c.conn.Close()
+
+    } else {
+        c.History = append(c.History, message.Payload)
+        c.app.Config.HandleCommand(c, message.Payload)
+    }
+
+}
 
 // serveWs handles websocket requests from the peer.
 func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
@@ -265,24 +228,34 @@ func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
         loge.Error("serveWs error: %v\n", err)
         return
     }
-    client := &Client{app: app, conn: conn, send: make(chan *ServerMessage, 256)}
+
+    client := &Client{app: app, conn: conn, send: make(chan interface{}, 256), connected: true, HttpReq: r}
     client.app.hub.register <- client
+    client.Misc = make(map[string]interface{})
+    client.History = make([]string, 0)
 
     // Allow collection of memory referenced by the caller by doing all work in
     // new goroutines.
     go client.writePump()
     go client.readPump()
 
-
-    loginUsernameMessage := &ServerMessage{Authenticated:false, Prompt:"Enter Username: ", PromptColor:"green"}
-    loginUsernameMessage.Response = "Welcome to the server"
-    loginUsernameMessage.Color = "red"
-    client.Send(loginUsernameMessage)
-
+    app.Config.WelcomeUser(client)
 }
 
 func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
     msg := &ClientMessage{}
     err := json.Unmarshal(payload, &msg)
     return msg, err
+}
+
+func (c *Client) IsAuthenticated() bool {
+    return c.authenticated
+}
+
+func (c *Client) IsConnected() bool {
+    return c.connected
+}
+
+func (c *Client) Username() string {
+    return c.username
 }

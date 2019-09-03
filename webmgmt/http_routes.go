@@ -22,10 +22,10 @@ type BuildInfo struct {
     RuntimeVer   string
 }
 
-
-var(
+var (
     AppBuildInfo *BuildInfo
 )
+
 func (app *MgmtApp) initRouter(Name, InstanceId string) {
     app.router = mux.NewRouter()
 
