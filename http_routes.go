@@ -2,10 +2,14 @@ package webmgmt
 
 import (
     "net/http"
+    "os"
 
     "github.com/gorilla/handlers"
     "github.com/gorilla/mux"
     "github.com/pkg/errors"
+    "github.com/potakhov/loge"
+
+    "github.com/gobuffalo/packr"
 )
 
 // http://localhost:7100/api/version
@@ -26,26 +30,37 @@ var (
     AppBuildInfo *BuildInfo
 )
 
-func (app *MgmtApp) initRouter(Name, InstanceId string) {
-    app.router = mux.NewRouter()
+func (app *MgmtApp) initRouter(Name, InstanceId string) http.Handler {
 
     app.hub = newHub()
     go app.hub.run()
 
     upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-    app.router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+    loge.Info("app.Config.WebPath: %v\n", app.Config.WebPath)
+    app.Config.Router.HandleFunc(app.Config.WebPath+"ws", func(w http.ResponseWriter, r *http.Request) {
         // loge.Info("/ws invoked")
         serveWs(app, w, r)
     })
 
-    app.router.PathPrefix("/").Handler(http.FileServer(http.Dir(app.Config.StaticHtmlDir)))
+    var fileHandler http.Handler
+
+    fi, err := os.Stat("./web")
+    if err == nil && fi.IsDir() {
+        fileHandler = http.FileServer(http.Dir(app.Config.StaticHtmlDir))
+    } else {
+        box := packr.NewBox("./web")
+        fileHandler = http.FileServer(box)
+    }
+
+    app.Config.Router.PathPrefix(app.Config.WebPath).Handler(http.StripPrefix(app.Config.WebPath, fileHandler))
+    // app.router.PathPrefix("/").Handler(http.FileServer(http.Dir(app.Config.StaticHtmlDir)))
 
     reqHandlers := handlers.CORS(
         handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
         handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}),
         handlers.AllowedOrigins([]string{"*"}),
-    )(app.router)
+    )(app.Config.Router)
 
     // (Logger(os.Stderr, app.router))
 
@@ -55,7 +70,7 @@ func (app *MgmtApp) initRouter(Name, InstanceId string) {
     addHeaders["X-Server-Name"] = Name
     h := AddHeadersHandler(addHeaders, reqHandlers)
 
-    app.http.Handler = h
+    return h
 }
 
 func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) {

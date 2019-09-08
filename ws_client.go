@@ -35,21 +35,31 @@ var upgrader = websocket.Upgrader{
     WriteBufferSize: 1024,
 }
 
+type Client interface {
+    IsAuthenticated() bool
+    IsConnected() bool
+    Username() string
+    Send(msg ServerMessage)
+    History() []string
+    HttpReq() *http.Request
+    Misc() map[string]interface{}
+}
+
 // Client is a middleman between the websocket connection and the hub.
-type Client struct {
+type WSClient struct {
     app           *MgmtApp
-    conn          *websocket.Conn  // The websocket connection.
-    send          chan interface{} // Buffered channel of outbound messages.
+    conn          *websocket.Conn    // The websocket connection.
+    send          chan ServerMessage // Buffered channel of outbound messages.
     username      string
     authenticated bool
     loginAttempts int
     connected     bool
-    Misc          map[string]interface{}
-    HttpReq       *http.Request
-    History       []string
+    misc          map[string]interface{}
+    httpReq       *http.Request
+    history       []string
 }
 
-func (c *Client) Send(msg interface{}) {
+func (c *WSClient) Send(msg ServerMessage) {
     if c.connected {
         c.send <- msg
     }
@@ -60,7 +70,7 @@ func (c *Client) Send(msg interface{}) {
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump() {
+func (c *WSClient) readPump() {
     defer func() {
 
         c.app.hub.unregister <- c
@@ -107,7 +117,7 @@ func (c *Client) readPump() {
 // A goroutine running writePump is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
-func (c *Client) writePump() {
+func (c *WSClient) writePump() {
     ticker := time.NewTicker(pingPeriod)
     defer func() {
         ticker.Stop()
@@ -150,7 +160,7 @@ func (c *Client) writePump() {
     }
 }
 
-func (c *Client) handleMessage(message *ClientMessage) {
+func (c *WSClient) handleMessage(message *ClientMessage) {
 
     if ! c.authenticated {
 
@@ -216,7 +226,7 @@ func (c *Client) handleMessage(message *ClientMessage) {
         _ = c.conn.Close()
 
     } else {
-        c.History = append(c.History, message.Payload)
+        c.history = append(c.history, message.Payload)
         c.app.Config.HandleCommand(c, message.Payload)
     }
 
@@ -230,10 +240,10 @@ func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    client := &Client{app: app, conn: conn, send: make(chan interface{}, 256), connected: true, HttpReq: r}
+    client := &WSClient{app: app, conn: conn, send: make(chan ServerMessage, 256), connected: true, httpReq: r}
     client.app.hub.register <- client
-    client.Misc = make(map[string]interface{})
-    client.History = make([]string, 0)
+    client.misc = make(map[string]interface{})
+    client.history = make([]string, 0)
 
     // Allow collection of memory referenced by the caller by doing all work in
     // new goroutines.
@@ -250,14 +260,25 @@ func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
     return msg, err
 }
 
-func (c *Client) IsAuthenticated() bool {
+func (c *WSClient) IsAuthenticated() bool {
     return c.authenticated
 }
 
-func (c *Client) IsConnected() bool {
+func (c *WSClient) IsConnected() bool {
     return c.connected
 }
 
-func (c *Client) Username() string {
+func (c *WSClient) Username() string {
     return c.username
 }
+
+func (c *WSClient) History() []string {
+    return c.history
+}
+func (c *WSClient) HttpReq() *http.Request {
+    return c.httpReq
+}
+func (c *WSClient) Misc() map[string]interface{} {
+    return c.misc
+}
+

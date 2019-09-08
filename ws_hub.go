@@ -4,24 +4,24 @@ package webmgmt
 // clients.
 type Hub struct {
     // Registered clients.
-    Clients map[*Client]bool
+    Clients map[*WSClient]bool
 
     // Inbound messages from the clients.
-    broadcast chan *ServerMessage
+    broadcast chan ServerMessage
 
     // Register requests from the clients.
-    register chan *Client
+    register chan *WSClient
 
     // Unregister requests from clients.
-    unregister chan *Client
+    unregister chan *WSClient
 }
 
 func newHub() *Hub {
     return &Hub{
-        broadcast:  make(chan *ServerMessage),
-        register:   make(chan *Client),
-        unregister: make(chan *Client),
-        Clients:    make(map[*Client]bool),
+        broadcast:  make(chan ServerMessage),
+        register:   make(chan *WSClient),
+        unregister: make(chan *WSClient),
+        Clients:    make(map[*WSClient]bool),
     }
 }
 
@@ -50,6 +50,6 @@ func (h *Hub) run() {
     }
 }
 
-func (h *Hub) Broadcast(msg *ServerMessage) {
+func (h *Hub) Broadcast(msg ServerMessage) {
     h.broadcast <- msg
 }

@@ -3,6 +3,7 @@ export LATEST_COMMIT := $(shell git log --pretty=format:'%h' -n 1)
 export BRANCH := $(shell git branch |grep -v "no branch"| grep \*|cut -d ' ' -f2)
 export BUILT_ON_IP := $(shell [ $$(uname) = Linux ] && hostname -i || hostname )
 export BIN_DIR=./bin
+export PACKR_EXECUTABLE := $(shell command -v packr  2> /dev/null)
 
 export BUILT_ON_OS=$(shell uname -a)
 ifeq ($(BRANCH),)
@@ -18,7 +19,8 @@ export COMPILE_LDFLAGS=-s -X "main.DATE=${DATE}" \
                           -X "main.BUILT_ON_OS=${BUILT_ON_OS}"
 
 
-build_info: ## Build the container
+
+build_info: check_prereq ## Build the container
 	@echo ''
 	@echo '---------------------------------------------------------'
 	@echo 'BUILT_ON_IP      $(BUILT_ON_IP)'
@@ -30,6 +32,7 @@ build_info: ## Build the container
 	@echo 'BUILD_NUMBER     $(BUILD_NUMBER)'
 	@echo 'COMPILE_LDFLAGS  $(COMPILE_LDFLAGS)'
 	@echo 'PATH             $(PATH)'
+	@echo 'PACKR_EXECUTABLE "$(PACKR_EXECUTABLE)"'
 	@echo '---------------------------------------------------------'
 	@echo ''
 
@@ -61,10 +64,20 @@ create_dir:
 	@rm -f $(BIN_DIR)/web
 	@ln -s ../web $(BIN_DIR)/web
 
+check_prereq: create_dir
+ifndef PACKR_EXECUTABLE
+	go get -u github.com/gobuffalo/packr/packr
+endif
+	$(warning "found packr")
+
+
+
 build_app: create_dir
-	go build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)
+		packr build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)
+
 
 example: build_info ## build example binary in bin dir
+	@echo "build 1"
 	make BIN_NAME=example APP_PATH=github.com/alexj212/webmgmt/example build_app
 	@echo ''
 	@echo ''

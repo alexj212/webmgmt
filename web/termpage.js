@@ -191,6 +191,12 @@ const Termpage = {
         terminal.$inputBlock.appendChild(terminal.$input);
         $winElement.appendChild(terminal.$inputBlock);
 
+
+        terminal.$status = document.createElement("div");
+        $winElement.appendChild(terminal.$status);
+        terminal.$status.className = "termpage-status";
+
+
         terminal.dom = {
             $winElement,
             $inputBlock: terminal.$inputBlock,
@@ -259,6 +265,22 @@ const Termpage = {
             Termpage._appendOutput(output, terminal.options, terminal.dom);
         };
 
+        terminal.cls = function () {
+            while (terminal.$output.firstChild) {
+                terminal.$output.removeChild(terminal.$output.firstChild);
+            }
+        };
+
+        terminal.setStatus = function (val) {
+            if ( val == "" ){
+                terminal.$status.innerHTML = "";
+
+            } else {
+                terminal.$status.innerHTML = val;
+            }
+        };
+
+
         return terminal;
     }
 };
@@ -273,6 +295,11 @@ html, body {
 .termpage-window {
   overflow-y: auto;
 }
+.termpage-status {
+  //overflow-y: auto;
+  position:absolute;bottom:0;
+}
+
 
 .termpage-block {
   margin: 0;
@@ -333,7 +360,19 @@ pre.termpage-block {
   padding-top: 5px;
 }
 
+.termpage-status {
+  background-color: black;
+  border: 2px solid #888;
+  padding-top: 5px;
+}
+
 .termpage-window * {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 16px;
+  color: #ddd;
+}
+
+.termpage-status * {
   font-family: "Courier New", Courier, monospace;
   font-size: 16px;
   color: #ddd;
