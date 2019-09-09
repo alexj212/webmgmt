@@ -8,6 +8,7 @@ import (
     "strings"
 
     "github.com/gorilla/mux"
+    "github.com/pkg/errors"
     "github.com/potakhov/loge"
 )
 
@@ -134,4 +135,15 @@ func GetIPAddress(r *http.Request) string {
 
     ip, _, _ = net.SplitHostPort(r.RemoteAddr)
     return ip
+}
+
+
+
+func GetRequestField(r *http.Request, fieldName string) (val string, err error) {
+    valVar, ok := mux.Vars(r)[fieldName]
+    if !ok {
+        return "", errors.Errorf("Bad request: specify %v", fieldName)
+    }
+
+    return valVar, nil
 }

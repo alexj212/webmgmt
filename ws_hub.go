@@ -4,7 +4,7 @@ package webmgmt
 // clients.
 type Hub struct {
     // Registered clients.
-    Clients map[*WSClient]bool
+    clients map[*WSClient]bool
 
     // Inbound messages from the clients.
     broadcast chan ServerMessage
@@ -21,7 +21,7 @@ func newHub() *Hub {
         broadcast:  make(chan ServerMessage),
         register:   make(chan *WSClient),
         unregister: make(chan *WSClient),
-        Clients:    make(map[*WSClient]bool),
+        clients:    make(map[*WSClient]bool),
     }
 }
 
@@ -29,21 +29,21 @@ func (h *Hub) run() {
     for {
         select {
         case client := <-h.register:
-            h.Clients[client] = true
+            h.clients[client] = true
         case client := <-h.unregister:
-            if _, ok := h.Clients[client]; ok {
+            if _, ok := h.clients[client]; ok {
                 client.connected = false
-                delete(h.Clients, client)
+                delete(h.clients, client)
                 close(client.send)
             }
         case message := <-h.broadcast:
-            for client := range h.Clients {
+            for client := range h.clients {
                 select {
                 case client.send <- message:
                 default:
                     client.connected = false
                     close(client.send)
-                    delete(h.Clients, client)
+                    delete(h.clients, client)
                 }
             }
         }

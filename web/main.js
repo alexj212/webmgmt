@@ -2,10 +2,6 @@ let path = 'ws';
 
 let tcp = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 let ws_url = tcp + window.location.host + window.location.pathname + path;
-console.log("window.location ", {location: window.location, window});
-
-console.log("ws_urlAA: " + ws_url);
-console.log("ws_urlBB: " + ws_url);
 
 let options = {
     wsEndpoint: ws_url,

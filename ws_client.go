@@ -59,6 +59,31 @@ type WSClient struct {
     history       []string
 }
 
+
+
+// serveWs handles websocket requests from the peer.
+func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        loge.Error("serveWs error: %v\n", err)
+        return
+    }
+
+    client := &WSClient{app: app, conn: conn, send: make(chan ServerMessage, 256), connected: true, httpReq: r}
+    client.app.hub.register <- client
+    client.misc = make(map[string]interface{})
+    client.history = make([]string, 0)
+    app.clientInitializer(client)
+
+    // Allow collection of memory referenced by the caller by doing all work in
+    // new goroutines.
+    go client.writePump()
+    go client.readPump()
+
+    app.welcomeUser(client)
+}
+
+
 func (c *WSClient) Send(msg ServerMessage) {
     if c.connected {
         c.send <- msg
@@ -124,7 +149,7 @@ func (c *WSClient) writePump() {
         c.conn.Close()
         c.connected = false
 
-        c.app.Config.UnregisterUser(c)
+        c.app.unregisterUser(c)
     }()
     for {
         c.connected = true
@@ -183,12 +208,12 @@ func (c *WSClient) handleMessage(message *ClientMessage) {
             }
         }
 
-        if c.app.Config.UserAuthenticator(c, c.username, message.Payload) {
-            c.app.Config.NotifyClientAuthenticated(c)
+        if c.app.userAuthenticator(c, c.username, message.Payload) {
+            c.app.notifyClientAuthenticated(c)
             c.authenticated = true
 
-            if c.app.Config.DefaultPrompt != "" {
-                c.Send(SetPrompt(c.app.Config.DefaultPrompt))
+            if c.app.defaultPrompt != "" {
+                c.Send(SetPrompt(c.app.defaultPrompt))
             }
 
             c.Send(SetEchoOn(true))
@@ -227,31 +252,11 @@ func (c *WSClient) handleMessage(message *ClientMessage) {
 
     } else {
         c.history = append(c.history, message.Payload)
-        c.app.Config.HandleCommand(c, message.Payload)
+        c.app.handleCommand(c, message.Payload)
     }
 
 }
 
-// serveWs handles websocket requests from the peer.
-func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
-    conn, err := upgrader.Upgrade(w, r, nil)
-    if err != nil {
-        loge.Error("serveWs error: %v\n", err)
-        return
-    }
-
-    client := &WSClient{app: app, conn: conn, send: make(chan ServerMessage, 256), connected: true, httpReq: r}
-    client.app.hub.register <- client
-    client.misc = make(map[string]interface{})
-    client.history = make([]string, 0)
-
-    // Allow collection of memory referenced by the caller by doing all work in
-    // new goroutines.
-    go client.writePump()
-    go client.readPump()
-
-    app.Config.WelcomeUser(client)
-}
 
 func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
     msg := &ClientMessage{}
@@ -281,4 +286,3 @@ func (c *WSClient) HttpReq() *http.Request {
 func (c *WSClient) Misc() map[string]interface{} {
     return c.misc
 }
-
