@@ -12,6 +12,8 @@ import (
     "github.com/potakhov/loge"
 )
 
+
+// HttpNocacheContent will set the headers for content type along with no caching.
 func HttpNocacheContent(w http.ResponseWriter, content string) {
     w.Header().Set("Content-Type", content)
     w.Header().Set("Cache-Control", "no-cache, no-store")
@@ -19,11 +21,12 @@ func HttpNocacheContent(w http.ResponseWriter, content string) {
     w.Header().Set("Expires", "0")
 }
 
+// HttpNocacheJson will set the headers on an http Response for a text/json content type along with no cache.
 func HttpNocacheJson(w http.ResponseWriter) {
     HttpNocacheContent(w, "text/json")
 }
 
-// Put to log actual error, send 500 error code to the client with generic string
+// InternalServerError will return an error to the client, sending 500 error code to the client with generic string
 func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
     w.Header().Set("Cache-Control", "no-cache, no-store")
     w.Header().Set("Pragma", "no-cache")
@@ -32,6 +35,8 @@ func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
     http.Error(w, "Internal server error", 500)
 }
 
+
+// SendJson will return take a value and serialize it to json and return the http response.
 func SendJson(w http.ResponseWriter, r *http.Request, val interface{}) {
     bytes, err := json.Marshal(val)
     if err != nil {
@@ -47,6 +52,7 @@ func SendJson(w http.ResponseWriter, r *http.Request, val interface{}) {
 
 }
 
+// AddHeadersHandler will take a map of string/string and use it to set the key and value as the header name and value respectively.
 func AddHeadersHandler(addHeaders map[string]string, h http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -115,6 +121,8 @@ func IsPrivateSubnet(ipAddress net.IP) bool {
     return false
 }
 
+
+// GetIpAddress will take a http request and check headers if it has been proxied to extract what the server believes to be the client ip address.
 func GetIPAddress(r *http.Request) string {
     var ip = ""
     for _, h := range []string{"X-Forwarded-For", "X-Real-Ip"} {
@@ -138,7 +146,7 @@ func GetIPAddress(r *http.Request) string {
 }
 
 
-
+// GetRequestField is a convenience member to access the http request fields and return the value or an error if it does not exist.
 func GetRequestField(r *http.Request, fieldName string) (val string, err error) {
     valVar, ok := mux.Vars(r)[fieldName]
     if !ok {

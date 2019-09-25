@@ -28,13 +28,16 @@ const (
 var (
     newline = []byte{'\n'}
     space   = []byte{' '}
+
+    upgrader = websocket.Upgrader{
+        ReadBufferSize:  1024,
+        WriteBufferSize: 1024,
+    }
 )
 
-var upgrader = websocket.Upgrader{
-    ReadBufferSize:  1024,
-    WriteBufferSize: 1024,
-}
 
+// Client is the interface a WebSocket client will implement. It provides access to the authenticated state as well as ability to send it a
+// ServerMessage to be processed on the MgmtApp.
 type Client interface {
     IsAuthenticated() bool
     IsConnected() bool
@@ -185,6 +188,10 @@ func (c *WSClient) writePump() {
     }
 }
 
+
+// handleMessage processes an incoming message, it will prompt for username of password based on the client auth state. Once authenticated if it is
+// necessary, it will process the client message, and add it to the client's history.
+//
 func (c *WSClient) handleMessage(message *ClientMessage) {
 
     if ! c.authenticated {
@@ -236,9 +243,11 @@ func (c *WSClient) handleMessage(message *ClientMessage) {
         c.Send(SetAuthenticated(false))
         c.Send(SetPrompt(""))
         c.Send(AppendText("Invalid Password - disconnecting client", "red"))
+
         time.Sleep(500 * time.Millisecond)
         _ = c.conn.Close()
 
+        c.app.notifyClientAuthenticatedFailed(c)
         return
     }
 
@@ -258,6 +267,7 @@ func (c *WSClient) handleMessage(message *ClientMessage) {
 }
 
 
+// ConvertBytesToMessage converts a byte slice to CLientMessage via json unmarshalling
 func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
     msg := &ClientMessage{}
     err := json.Unmarshal(payload, &msg)
@@ -265,24 +275,38 @@ func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
     return msg, err
 }
 
+
+// IsAuthenticated returns the auth state of the client connection
 func (c *WSClient) IsAuthenticated() bool {
     return c.authenticated
 }
 
+
+// IsConnected returns the auth state of the client connection
 func (c *WSClient) IsConnected() bool {
     return c.connected
 }
 
+
+// Username returns the username of the exiting client connection
 func (c *WSClient) Username() string {
     return c.username
 }
 
+
+// History returns the slice of commands that have been sent from the client to the server, for the existing client connection
 func (c *WSClient) History() []string {
     return c.history
 }
+
+
+// HttpReq returns Request for the current client to be able to access headers, cookies etc
 func (c *WSClient) HttpReq() *http.Request {
     return c.httpReq
 }
+
+
+// Misc returns the map that can be used to attach data to a client connection
 func (c *WSClient) Misc() map[string]interface{} {
     return c.misc
 }

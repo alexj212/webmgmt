@@ -11,6 +11,7 @@ import (
     "github.com/kballard/go-shellquote"
 )
 
+// CommandArgs is a struct that is used to store the contents of a parsed command line string.
 type CommandArgs struct {
     CmdLine string
     CmdName string
@@ -19,10 +20,12 @@ type CommandArgs struct {
     output  io.Writer
 }
 
+// String will return the CmdLine the original one that is parsed.
 func (c *CommandArgs) String() string {
     return c.CmdLine
 }
 
+// PealOff will return a command line string after N commands have been pealed off from the front of the command line.
 func (c *CommandArgs) PealOff(pos int) string {
     var buffer bytes.Buffer
 
@@ -44,6 +47,7 @@ func (c *CommandArgs) PealOff(pos int) string {
     return buffer.String()
 }
 
+// Debug will return a string listing the original command line and the parsed arguments and flags
 func (c *CommandArgs) Debug() string {
     var buffer bytes.Buffer
 
@@ -55,9 +59,12 @@ func (c *CommandArgs) Debug() string {
     return buffer.String()
 }
 
+// Parse will use the defined FlagSet parsed and return an error if help is invoked or invalid flags
 func (c *CommandArgs) Parse() error {
     return c.FlagSet.Parse(c.Args)
 }
+
+// Shift will return a new CommandArgs after shifting the first cmd in the string
 func (c *CommandArgs) Shift() (*CommandArgs, error) {
     if strings.HasPrefix(c.CmdLine, c.CmdName) {
         newCmdLine := c.CmdLine[len(c.CmdName):]
@@ -67,6 +74,8 @@ func (c *CommandArgs) Shift() (*CommandArgs, error) {
     }
 }
 
+// NewCommandArgs will take a raw string and output. The Raw string will be parsed into a CommandArgs structure.
+// If an error is encountered such as empty command string it will be returned and the CommandArgs will be nil.
 func NewCommandArgs(cmdLine string, output io.Writer) (*CommandArgs, error) {
 
     if cmdLine == "" {
@@ -94,7 +103,6 @@ func NewCommandArgs(cmdLine string, output io.Writer) (*CommandArgs, error) {
         }
         return invoke, nil
     }
-
     // topic Hello World Stinky
     // topic "Hello World" Stinky
     // group 156 topic Hello World Stinky

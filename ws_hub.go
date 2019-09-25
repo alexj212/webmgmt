@@ -16,6 +16,7 @@ type Hub struct {
     unregister chan *WSClient
 }
 
+// newHub will create the struct for handling clients.
 func newHub() *Hub {
     return &Hub{
         broadcast:  make(chan ServerMessage),
@@ -25,6 +26,8 @@ func newHub() *Hub {
     }
 }
 
+
+// run handler for processing new clients and client disconnects and broadcast ServerMessages.
 func (h *Hub) run() {
     for {
         select {
@@ -50,6 +53,8 @@ func (h *Hub) run() {
     }
 }
 
+
+// Broadcast sill send a ServerMessage to all users on the System.
 func (h *Hub) Broadcast(msg ServerMessage) {
     h.broadcast <- msg
 }

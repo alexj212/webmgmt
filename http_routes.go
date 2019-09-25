@@ -1,8 +1,11 @@
 package webmgmt
 
 import (
+    "fmt"
+    "github.com/gobuffalo/packd"
     "net/http"
     "os"
+    "strings"
 
     "github.com/gorilla/handlers"
     "github.com/gorilla/mux"
@@ -12,7 +15,8 @@ import (
 )
 
 
-
+//initRouter will initialize the Router with the admin web app. It registers the webapp and assets file handler
+// to be under the WebPath config field.
 func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http.Handler {
 
     app.hub = newHub()
@@ -28,10 +32,14 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 
     var fileHandler http.Handler
 
-    fi, err := os.Stat("./web")
-    if err == nil && fi.IsDir() {
-        fileHandler = http.FileServer(http.Dir(app.staticHtmlDir))
-    } else {
+    if app.staticHtmlDir != "" {
+        fi, err := os.Stat(app.staticHtmlDir)
+        if err == nil && fi.IsDir() {
+            fileHandler = http.FileServer(http.Dir(app.staticHtmlDir))
+        }
+    }
+
+    if fileHandler== nil {
         box := packr.NewBox("./web")
         fileHandler = http.FileServer(box)
     }
@@ -56,19 +64,53 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
     return h
 }
 
+
+// handleServerVersion handles the server version rest handler
 func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) {
     HttpNocacheJson(w)
     SendJson(w, r, AppBuildInfo)
 }
 
-type Results struct {
-    Id        string      `json:"RoomId"`
-    Action    string      `json:"Action"`
-    Completed bool        `json:"Completed"`
-    Data      interface{} `json:"data"`
-}
+//
+//type ErrorResult struct {
+//    Id    string `json:"id"`
+//    Error string `json:"error"`
+//}
 
-type ErrorResult struct {
-    Id    string `json:"id"`
-    Error string `json:"error"`
+
+// SaveTemplates will save the prepacked templates for local editing. File structure will be recreated under the output dir.
+func (app *MgmtApp) SaveTemplates(outputDir string) error {
+
+    if outputDir == "" {
+        outputDir = "."
+    }
+
+    if strings.HasSuffix(outputDir, "/"){
+        outputDir = outputDir[:len(outputDir)-1]
+    }
+
+    if outputDir == "" {
+        outputDir = "."
+    }
+
+    box := packr.NewBox("./web")
+
+    box.Walk(func(s string, file packd.File) error {
+        fileName := fmt.Sprintf("%s/%s", outputDir, s)
+
+        fi, err := file.FileInfo()
+        if err == nil {
+            if !fi.IsDir() {
+
+                err := WriteNewFile( fileName, file, 666)
+                if err != nil {
+                     return err
+                }
+            }
+        }
+
+       return nil
+    })
+
+    return nil
 }

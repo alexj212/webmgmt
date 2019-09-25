@@ -25,6 +25,8 @@ func Setup(router *mux.Router ) (mgmtApp *webmgmt.MgmtApp, err error) {
     config.DefaultPrompt = "$"
     config.WebPath = "/admin/"
 
+
+
     config.UserAuthenticator = func(client webmgmt.Client, s string, s2 string) bool {
         return s == "alex" && s2 == "bambam"
     }
