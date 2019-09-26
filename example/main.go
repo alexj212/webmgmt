@@ -94,10 +94,10 @@ func main() {
 	}
 
 	if saveTemplateDir != "" {
-		err = app.SaveTemplates(saveTemplateDir)
+		err = webmgmt.SaveAssets(saveTemplateDir)
 		if err != nil {
-			loge.Printf("Error writing templates: %v", err)
-            os.Exit(-1)
+			loge.Printf("Error writing assets: %v", err)
+			os.Exit(-1)
 		}
 	}
 
@@ -108,15 +108,13 @@ func main() {
 		}
 	}()
 
-
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, app.WebPath(), 302)
+		http.Redirect(w, r, app.WebPath(), 302)
 	})
 
 	router.NotFoundHandler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		http.Redirect(rw, r, app.WebPath(), 302)
 	})
-
 
 	httpServer.Handler = router
 	LoopForever()

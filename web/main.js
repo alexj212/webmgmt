@@ -54,6 +54,9 @@ let connectOptions = {
             case "rawtext":
                 term1.append(msg);
                 break;
+            case "clickable":
+                term1.append(msg);
+                break;
             case "history":
                 term1.options.appendHistory = msg.val;
                 break;

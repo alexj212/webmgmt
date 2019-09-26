@@ -8,7 +8,6 @@ import (
 	"runtime"
 )
 
-
 // FileExists will check the name passed in and return a bool if the file exists or not
 func FileExists(name string) bool {
 	_, err := os.Stat(name)
@@ -23,7 +22,6 @@ func Mkdir(dirPath string, dirMode os.FileMode) error {
 	}
 	return nil
 }
-
 
 // WriteNewFile will attempt to write a file with the filename and path, a Reader and the FileMode of the file to be created.
 // If an error is encountered an error will be returned.
@@ -50,6 +48,3 @@ func WriteNewFile(fpath string, in io.Reader, fm os.FileMode) error {
 	}
 	return nil
 }
-
-
-

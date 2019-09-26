@@ -272,7 +272,7 @@ const Termpage = {
         };
 
         terminal.setStatus = function (val) {
-            if ( val == "" ){
+            if (val == "") {
                 terminal.$status.innerHTML = "";
 
             } else {

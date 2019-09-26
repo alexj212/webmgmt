@@ -32,7 +32,7 @@ type Config struct {
 	UserAuthenticator               func(client Client, username string, password string) bool
 	HandleCommand                   func(c Client, cmd string)
 	NotifyClientAuthenticated       func(client Client)
-	notifyClientAuthenticatedFailed func(client Client)
+	NotifyClientAuthenticatedFailed func(client Client)
 	WelcomeUser                     func(client Client)
 	UnregisterUser                  func(client Client)
 	ClientInitializer               func(client Client)
@@ -59,7 +59,7 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 	c.userAuthenticator = config.UserAuthenticator
 	c.handleCommand = config.HandleCommand
 	c.notifyClientAuthenticated = config.NotifyClientAuthenticated
-	c.notifyClientAuthenticatedFailed = config.notifyClientAuthenticatedFailed
+	c.notifyClientAuthenticatedFailed = config.NotifyClientAuthenticatedFailed
 	c.welcomeUser = config.WelcomeUser
 	c.unregisterUser = config.UnregisterUser
 	c.defaultPrompt = config.DefaultPrompt
@@ -70,7 +70,7 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 		c.userAuthenticator = c.defaultUserAuthenticator
 	}
 	if c.handleCommand == nil {
-		c.handleCommand = c.defaultHandleCommand
+		c.handleCommand = HandleCommands()
 	}
 	if c.notifyClientAuthenticated == nil {
 		c.notifyClientAuthenticated = c.defaultNotifyClientAuthenticated
