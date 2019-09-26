@@ -6,7 +6,7 @@ the function is invoked with the parsed command line.
 
 
 
-##Command func - 
+## Command func 
 This is example of using flags to set a field, if the command is invoked with the `-help` flag, then the help output is displayed.
 
 ```.env
@@ -35,15 +35,15 @@ Here the command is defined in the Map of Commands. Within the Command struct He
 
 
 
-#### Details
+## Details
 this project will allow for a web admin service to be embedded into a service. This will allow clients to open a browser to the access port and login to the service. Commands can be developed to access the server.
 
-#### Web
-html terminal borrowed from  https://github.com/tautvilas/termpage
+## Web
+html terminal assets borrowed from  https://github.com/tautvilas/termpage
 
 
 
-#### Building & Running
+## Building & Running
 There is a sample web terminal that is embedded in a test application. The source resides in `./example`. To build the project
 You can follow the steps below.
 ```bash
@@ -128,7 +128,7 @@ The submitted username and password will also be passed to validate the session.
     }
 ```
 
-#Post Authentication
+## Post Authentication
 The NotifyClientAuthenticated func is invoked when a client is authenticated. This can be used for logging purposes.
 ```.go
     config.NotifyClientAuthenticated= func(client webmgmt.Client) {
@@ -139,7 +139,7 @@ The NotifyClientAuthenticated func is invoked when a client is authenticated. Th
 
 ```
 
-#Post Authentication Failure
+## Post Authentication Failure
 The NotifyClientAuthenticatedFailed func is invoked when a client fails authentication. It will be invoked after the client is disconnected. . This can be used for logging purposes.
 ```.go
     config.NotifyClientAuthenticatedFailed= func(client webmgmt.Client) {
@@ -149,7 +149,7 @@ The NotifyClientAuthenticatedFailed func is invoked when a client fails authenti
 
 
 
-# Client command handling
+## Client command handling
 Below is adding of commands that will be available to be executed. A webmgmt.Command struct is used to store a reference to the func
 To be executed, The Help text, along with the ExecRights needed to execute the command. Several commands are added by default such as 
 `help` or `cls`. The `help` command with look at the clients ExecRights to see if they have access to exec that command. 
@@ -232,7 +232,7 @@ type Config struct {
                          
 
 
-##Html Assets
+## Html Assets
 The webmgmt uses several html and js resources that are delivered to the client. They are embedded into the webmgmt library with the 
 use of packr that can mimic a filesystem, while the assets are encoded into a go file via the packr command. Users of the library 
 can set a directory to be used instead of the embedded assets. There is a utility method  
@@ -241,7 +241,7 @@ the assets. In webmgmt.Config the field `StaticHtmlDir` if defined and it exists
 does not exist the embedded assets will be used.
 
 
-##Example App
+## Example App
 In this snippet we use a flag passed to the app to write out assets so that they can be customized. 
 ```.go
     var saveTemplateDir string
@@ -266,7 +266,10 @@ In this snippet we use a flag passed to the app to write out assets so that they
 ```
 
 
-#ServerMessages
+## ServerMessages
+Server sends json payloads via the websocket to the client terminal. The Client terminal will process the ServerMessages to
+trigger begaviors within the client terminal. Such as display text, clear screen, render html, eval javascript code etc.
+
 ```.json
 // TextMessaage is the json for the server message that is sent to the client to tell the client to display text in the terminal window.
 {
