@@ -43,8 +43,9 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 		fileHandler = http.FileServer(box)
 	}
 
+	router.HandleFunc(app.webPath+"/version", app.handleServerVersion)
 	router.PathPrefix(app.webPath).Handler(http.StripPrefix(app.webPath, fileHandler))
-	// app.router.PathPrefix("/").Handler(http.FileServer(http.Dir(app.Config.StaticHtmlDir)))
+
 
 	reqHandlers := handlers.CORS(
 		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
@@ -62,6 +63,7 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 
 	return h
 }
+
 
 // handleServerVersion handles the server version rest handler
 func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) {
