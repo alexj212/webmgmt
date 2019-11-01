@@ -24,8 +24,6 @@ function term1ProcessInput(input = '') {
     } else {
         repl.connect();
     }
-
-    return "", false;
 }
 
 
@@ -33,6 +31,7 @@ let connectOptions = {
     wsOpenedCallback: () => {
         term1.append(Termpage.color('red', "Connection Opened\n\n"));
     },
+
     wsClosedCallback: () => {
         term1.append(Termpage.color('red', "Connection Closed\n\n"));
         term1.updatePrompt('');
@@ -41,6 +40,7 @@ let connectOptions = {
     wsMsgEnteredCallback: (msg) => {
         //console.log('msgEntered> ', msg);
     },
+
     OnMessageRecevied: (msg) => {
         //console.log('wsMsgReceived> ', msg);
         switch (msg.type) {

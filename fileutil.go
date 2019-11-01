@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 // FileExists will check the name passed in and return a bool if the file exists or not
@@ -25,8 +24,8 @@ func Mkdir(dirPath string, dirMode os.FileMode) error {
 
 // WriteNewFile will attempt to write a file with the filename and path, a Reader and the FileMode of the file to be created.
 // If an error is encountered an error will be returned.
-func WriteNewFile(fpath string, in io.Reader, fm os.FileMode) error {
-	err := os.MkdirAll(filepath.Dir(fpath), 0755)
+func WriteNewFile(fpath string, in io.Reader) error {
+	err := os.MkdirAll(filepath.Dir(fpath), 0775)
 	if err != nil {
 		return fmt.Errorf("%s: making directory for file: %v", fpath, err)
 	}
@@ -37,10 +36,12 @@ func WriteNewFile(fpath string, in io.Reader, fm os.FileMode) error {
 	}
 	defer out.Close()
 
-	err = out.Chmod(fm)
-	if err != nil && runtime.GOOS != "windows" {
-		return fmt.Errorf("%s: changing file mode: %v", fpath, err)
-	}
+	//fmt.Printf("WriteNewFile: %v\n", fm)
+	//
+	//err = out.Chmod(fm)
+	//if err != nil && runtime.GOOS != "windows" {
+	//	return fmt.Errorf("%s: changing file mode: %v", fpath, err)
+	//}
 
 	_, err = io.Copy(out, in)
 	if err != nil {

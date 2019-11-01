@@ -74,7 +74,7 @@ function wsrepl(customArgs) {
 
         arg.ws = new WebSocket(arg.wsEndpoint);
         arg.ws.addEventListener('open', function (event) {
-
+            console.log('ws.open', event);
             setStatus('connected to ' + arg.wsEndpoint);
             setTextEntryDisabled(false);
             if (arg.wsOpenedCallback) {
@@ -92,8 +92,9 @@ function wsrepl(customArgs) {
             }
             replyToPage(message.payload, true);
         });
-        arg.ws.addEventListener('close', function (event) {
 
+        arg.ws.addEventListener('close', function (event) {
+            console.log('ws.close', event);
             setStatus('disconnected from ' + arg.wsEndpoint);
             setTextEntryDisabled(true);
 
@@ -105,8 +106,8 @@ function wsrepl(customArgs) {
 
 
     arg.isConnected = function () {
-        return arg.ws.readyState == arg.ws.OPEN
-    }
+        return arg.ws.readyState === arg.ws.OPEN;
+    };
 
     arg.setStatus = setStatus;
     arg.setTextEntryDisabled = setTextEntryDisabled;

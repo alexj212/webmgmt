@@ -1,3 +1,6 @@
+export PROJ_PATH=github.com/alexj212/webmgmt
+
+
 export DATE := $(shell date +%Y.%m.%d-%H%M)
 export LATEST_COMMIT := $(shell git log --pretty=format:'%h' -n 1)
 export BRANCH := $(shell git branch |grep -v "no branch"| grep \*|cut -d ' ' -f2)
@@ -98,6 +101,14 @@ clean_binary: ## clean binary in bin dir
 
 clean_example: ## clean example
 	make BIN_NAME=example clean_binary
+
+
+
+test: ## run tests
+	go test $(PROJ_PATH)/_test/
+
+fmt: ## run fmt
+	go fmt $(PROJ_PATH)/...
 
 
 

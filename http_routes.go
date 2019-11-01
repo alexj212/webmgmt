@@ -56,7 +56,7 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 	// (Logger(os.Stderr, app.router))
 
 	addHeaders := make(map[string]string)
-	addHeaders["X-Served-By"] = "gooch1.0"
+	addHeaders["X-Served-By"] = "gooch-1.0"
 	addHeaders["X-Server-Id"] = InstanceId
 	addHeaders["X-Server-Name"] = Name
 	h := AddHeadersHandler(addHeaders, reqHandlers)
@@ -79,7 +79,7 @@ func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) 
 
 // SaveTemplates will save the prepacked templates for local editing. File structure will be recreated under the output dir.
 func SaveAssets(outputDir string) error {
-
+	fmt.Printf("SaveAssets: %v\n", outputDir)
 	if outputDir == "" {
 		outputDir = "."
 	}
@@ -101,7 +101,7 @@ func SaveAssets(outputDir string) error {
 		if err == nil {
 			if !fi.IsDir() {
 
-				err := WriteNewFile(fileName, file, 666)
+				err := WriteNewFile(fileName, file)
 				if err != nil {
 					return err
 				}
