@@ -17,6 +17,7 @@ const ALL = ExecLevel(0)
 const USER = ExecLevel(1)
 const ADMIN = ExecLevel(2)
 
+
 type Command struct {
 	Exec      CommandFunc
 	Help      string
@@ -24,6 +25,7 @@ type Command struct {
 }
 
 var Commands map[string]*Command
+var ForegroundColor string = "white"
 
 func init() {
 	Commands = make(map[string]*Command)
@@ -32,7 +34,7 @@ func init() {
 	cmd = &Command{Exec: displayHttpInfo, Help: "Display http request information", ExecLevel: ALL}
 	Commands["http"] = cmd
 
-	cmd = &Command{Exec: displayHistory, Help: "show the history of commands executed", ExecLevel: ALL}
+	cmd = &Command{Exec: displayHistory, Help: "Show the history of commands executed", ExecLevel: ALL}
 	Commands["history"] = cmd
 
 	cmd = &Command{Exec: displayUserInfo, Help: "Show user details about logged in user", ExecLevel: ALL}
@@ -95,12 +97,12 @@ func HandleCommands() (handler func(Client, string)) {
 				writer.Flush()
 
 				if err != nil {
-					client.Send(AppendRawText(fmt.Sprintf("%s\n\n", err)))
+					client.Send(AppendText(fmt.Sprintf("%s\n\n", err), ForegroundColor))
 				}
 
 				output := b.String()
 				if output != "" {
-					client.Send(AppendRawText(output))
+					client.Send(AppendText(output, ForegroundColor))
 				}
 			} else {
 				client.Send(AppendText(fmt.Sprintf("You do not have permission to execute: %v", parsed.CmdLine), "red"))

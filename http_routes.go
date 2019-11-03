@@ -71,11 +71,6 @@ func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) 
 	SendJson(w, r, AppBuildInfo)
 }
 
-//
-//type ErrorResult struct {
-//    Id    string `json:"id"`
-//    Error string `json:"error"`
-//}
 
 // SaveTemplates will save the prepacked templates for local editing. File structure will be recreated under the output dir.
 func SaveAssets(outputDir string) error {

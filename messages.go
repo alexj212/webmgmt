@@ -1,6 +1,9 @@
 package webmgmt
 
-import "fmt"
+import (
+	"fmt"
+	"html"
+)
 
 // ServerMessage is the interface that all messages from the server to client will implement.
 type ServerMessage interface {
@@ -105,7 +108,7 @@ func (c *Status) Get() interface{} {
 func AppendText(text, color string) ServerMessage {
 	something := &TextMessage{}
 	something.Type = "text"
-	something.Text = text
+	something.Text = html.EscapeString(text)
 	something.Color = color
 	return something
 }
@@ -132,7 +135,7 @@ func ClickableCommands( commands []string) ServerMessage {
 func SetPrompt(prompt string) ServerMessage {
 	something := &Prompt{}
 	something.Type = "prompt"
-	something.Prompt = prompt
+	something.Prompt = html.EscapeString(prompt)
 	return something
 }
 
@@ -171,7 +174,7 @@ func Cls() ServerMessage {
 func SetStatus(text string) ServerMessage {
 	something := &Status{}
 	something.Type = "status"
-	something.Text = text
+	something.Text = html.EscapeString(text)
 	return something
 }
 
@@ -191,9 +194,10 @@ func Link(url, text string) string {
 // Color is used to a color string and return a string containing the color for a span.
 func Color(color, text string) string {
 	if text == "" {
-		return text
+		return html.EscapeString(text)
 	}
-	return fmt.Sprintf("<span style=\"color:%s\">%s</span>", color, text)
+
+	return fmt.Sprintf("<span style=\"color:%s\">%s</span>", color, html.EscapeString(text))
 }
 
 // Image is used to take several predefined fields and return an html snipped to display an image.
