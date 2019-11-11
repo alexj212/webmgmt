@@ -5,6 +5,12 @@ import (
 	"html"
 )
 
+var (
+	NormalOutput = "white"
+	ErrorOutput  = "red"
+)
+
+
 // ServerMessage is the interface that all messages from the server to client will implement.
 type ServerMessage interface {
 	Get() interface{}
@@ -209,4 +215,23 @@ func Image(width, height int, src, alt string) string {
 // HandleCommand             func(c Client, cmd string) defined in the Config.
 type ClientMessage struct {
 	Payload string `json:"payload"`
+}
+
+
+
+func AppendNormalText(text string) ServerMessage {
+	something := &TextMessage{}
+	something.Type = "text"
+	something.Text = html.EscapeString(text)
+	something.Color = NormalOutput
+	return something
+}
+
+
+func AppendErrorText(text string) ServerMessage {
+	something := &TextMessage{}
+	something.Type = "text"
+	something.Text = html.EscapeString(text)
+	something.Color = ErrorOutput
+	return something
 }
