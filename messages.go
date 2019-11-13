@@ -220,7 +220,7 @@ type ClientMessage struct {
 
 
 func AppendNormalText(format string, a ...interface{}) ServerMessage {
-	text := fmt.Sprintf(format, a)
+	text := fmt.Sprintf(format, a...)
 	something := &TextMessage{}
 	something.Type = "text"
 	something.Text = html.EscapeString(text)
@@ -230,7 +230,7 @@ func AppendNormalText(format string, a ...interface{}) ServerMessage {
 
 
 func AppendErrorText(format string, a ...interface{}) ServerMessage {
-	text := fmt.Sprintf(format, a)
+	text := fmt.Sprintf(format, a...)
 	something := &TextMessage{}
 	something.Type = "text"
 	something.Text = html.EscapeString(text)
