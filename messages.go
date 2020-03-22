@@ -6,10 +6,9 @@ import (
 )
 
 var (
-	NormalOutput = "white"
-	ErrorOutput  = "red"
+	NormalOutputColor = "white"
+	ErrorOutputColor  = "red"
 )
-
 
 // ServerMessage is the interface that all messages from the server to client will implement.
 type ServerMessage interface {
@@ -40,14 +39,12 @@ func (c *TextMessage) Get() interface{} {
 // RawTextMessage is the struct for the server message that is sent to the client to tell the client to display text as raw text in the terminal window.
 type RawTextMessage struct {
 	ServerMessageBase
-	Text     string   `json:"text"`
+	Text string `json:"text"`
 }
 
 func (c *RawTextMessage) Get() interface{} {
 	return c
 }
-
-
 
 // Clickable is the struct for the server message that is sent to the client to tell the client to display clickable.
 type Clickable struct {
@@ -58,7 +55,6 @@ type Clickable struct {
 func (c *Clickable) Get() interface{} {
 	return c
 }
-
 
 // Prompt is the struct for the server message that is sent to the client to tell the client what the prompt should be
 type Prompt struct {
@@ -127,15 +123,13 @@ func AppendRawText(text string) ServerMessage {
 	return something
 }
 
-
 // ClickableCommands will return a command packet that will append the raw text to the bottom of the output in the web terminal
-func ClickableCommands( commands []string) ServerMessage {
+func ClickableCommands(commands []string) ServerMessage {
 	something := &Clickable{}
 	something.Type = "clickable"
 	something.Commands = commands
 	return something
 }
-
 
 // SetPrompt will return a command packet that will set the prompt in the web terminal.
 func SetPrompt(prompt string) ServerMessage {
@@ -217,23 +211,22 @@ type ClientMessage struct {
 	Payload string `json:"payload"`
 }
 
-
-
+// AppendNormalText create a ServerMessage for TextMessage normal, format and args are used to create the text via Sprintf
 func AppendNormalText(format string, a ...interface{}) ServerMessage {
 	text := fmt.Sprintf(format, a...)
 	something := &TextMessage{}
 	something.Type = "text"
 	something.Text = html.EscapeString(text)
-	something.Color = NormalOutput
+	something.Color = NormalOutputColor
 	return something
 }
 
-
+// AppendErrorText create a ServerMessage for TextMessage error, format and args are used to create the text via Sprintf
 func AppendErrorText(format string, a ...interface{}) ServerMessage {
 	text := fmt.Sprintf(format, a...)
 	something := &TextMessage{}
 	something.Type = "text"
 	something.Text = html.EscapeString(text)
-	something.Color = ErrorOutput
+	something.Color = ErrorOutputColor
 	return something
 }

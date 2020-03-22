@@ -2,8 +2,10 @@ package webmgmt
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
+	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/potakhov/loge"
@@ -11,7 +13,7 @@ import (
 
 // MgmtApp struct is the web admin app.
 type MgmtApp struct {
-	staticHtmlDir                   string
+	fileSystem                      http.FileSystem
 	userAuthenticator               func(client Client, username string, password string) bool
 	handleCommand                   func(c Client, cmd string)
 	notifyClientAuthenticated       func(client Client)
@@ -26,7 +28,7 @@ type MgmtApp struct {
 
 // Config struct  is used to configure a WebMgmt admin handler.
 type Config struct {
-	StaticHtmlDir                   string
+	FileSystem                      http.FileSystem
 	DefaultPrompt                   string
 	WebPath                         string
 	UserAuthenticator               func(client Client, username string, password string) bool
@@ -42,7 +44,7 @@ type Config struct {
 func (cfg *Config) Display() {
 	fmt.Println(os.Args)
 	fmt.Println("-------------------------------------")
-	fmt.Printf("StaticHtmlDir        : %s\n", cfg.StaticHtmlDir)
+	fmt.Printf("fileSystem        : %T\n", cfg.FileSystem)
 	fmt.Println("-------------------------------------")
 }
 
@@ -55,7 +57,7 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 	}
 
 	c := &MgmtApp{}
-	c.staticHtmlDir = config.StaticHtmlDir
+	c.fileSystem = config.FileSystem
 	c.userAuthenticator = config.UserAuthenticator
 	c.handleCommand = config.HandleCommand
 	c.notifyClientAuthenticated = config.NotifyClientAuthenticated
@@ -65,6 +67,22 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 	c.defaultPrompt = config.DefaultPrompt
 	c.webPath = config.WebPath
 	c.clientInitializer = config.ClientInitializer
+
+	if c.fileSystem == nil {
+		loge.Info("using file serving from packed resources \n")
+		box := packr.New("webmgmt", "./web")
+		loge.Info("Box Details: Name: %v Path: %v ResolutionDir: %v", box.Name, box.Path, box.ResolutionDir)
+
+		for i, file := range box.List() {
+			loge.Info("   [%d] [%s]", i, file)
+		}
+		c.fileSystem = box
+	}
+
+	_, err := c.fileSystem.Open("index.html")
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to create NewMgmtApp - unable to find index.html in filesystem")
+	}
 
 	if c.userAuthenticator == nil {
 		c.userAuthenticator = c.defaultUserAuthenticator

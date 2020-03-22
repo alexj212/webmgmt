@@ -17,7 +17,6 @@ const ALL = ExecLevel(0)
 const USER = ExecLevel(1)
 const ADMIN = ExecLevel(2)
 
-
 type Command struct {
 	Exec      CommandFunc
 	Help      string
@@ -94,7 +93,7 @@ func HandleCommands() (handler func(Client, string)) {
 			if client.ExecLevel() >= cmd.ExecLevel {
 
 				err = cmd.Exec(client, parsed, writer)
-				writer.Flush()
+				_ = writer.Flush()
 
 				if err != nil {
 					client.Send(AppendText(fmt.Sprintf("%s\n\n", err), ForegroundColor))

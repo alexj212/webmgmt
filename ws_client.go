@@ -193,7 +193,7 @@ func (c *WSClient) writePump() {
 //
 func (c *WSClient) handleMessage(message *ClientMessage) {
 
-	if ! c.authenticated {
+	if !c.authenticated {
 
 		if c.username == "" {
 

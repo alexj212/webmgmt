@@ -4,21 +4,23 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"time"
 
-	"github.com/alexj212/webmgmt"
 	"github.com/gorilla/mux"
 	"github.com/potakhov/loge"
+
+	"github.com/alexj212/webmgmt"
 )
 
-func Setup(router *mux.Router) (mgmtApp *webmgmt.MgmtApp, err error) {
+func Setup(router *mux.Router, fs http.FileSystem) (mgmtApp *webmgmt.MgmtApp, err error) {
 
 	//## Initialization
 	// 1. Create a Config struct and set the template path to ./web
 	// 2. Set the DefaultPrompt
 	// 3. Set the Webpath that will be used to access the terminal via a browser
 
-	config := &webmgmt.Config{StaticHtmlDir: "./web"}
+	config := &webmgmt.Config{FileSystem: fs}
 	config.DefaultPrompt = "$"
 	config.WebPath = "/admin/"
 
@@ -91,7 +93,7 @@ func Setup(router *mux.Router) (mgmtApp *webmgmt.MgmtApp, err error) {
 	}, Help: "Updates the prompt to a multi colored prompt"}
 	webmgmt.Commands["prompt"] = cmd
 
-	cmd = &webmgmt.Command{Exec: lines, ExecLevel:webmgmt.ALL, Help: "Displays N lines of text"}
+	cmd = &webmgmt.Command{Exec: lines, ExecLevel: webmgmt.ALL, Help: "Displays N lines of text"}
 	webmgmt.Commands["lines"] = cmd
 
 	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
@@ -114,10 +116,8 @@ func Setup(router *mux.Router) (mgmtApp *webmgmt.MgmtApp, err error) {
 	}, Help: "Evals sends js to the client to be evaluated"}
 	webmgmt.Commands["eval"] = cmd
 
-
-
 	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
-		commands :=  []string{"help", "cls", "lines", "link", "image",}
+		commands := []string{"help", "cls", "lines", "link", "image"}
 		client.Send(webmgmt.ClickableCommands(commands))
 		client.Send(webmgmt.Eval("alert ('alex');"))
 		return

@@ -6,7 +6,7 @@ export LATEST_COMMIT := $(shell git log --pretty=format:'%h' -n 1)
 export BRANCH := $(shell git branch |grep -v "no branch"| grep \*|cut -d ' ' -f2)
 export BUILT_ON_IP := $(shell [ $$(uname) = Linux ] && hostname -i || hostname )
 export BIN_DIR=./bin
-export PACKR_EXECUTABLE := $(shell command -v packr  2> /dev/null)
+export PACKR2_EXECUTABLE := $(shell command -v packr2  2> /dev/null)
 
 export BUILT_ON_OS=$(shell uname -a)
 ifeq ($(BRANCH),)
@@ -26,16 +26,16 @@ export COMPILE_LDFLAGS=-s -X "main.DATE=${DATE}" \
 build_info: check_prereq ## Build the container
 	@echo ''
 	@echo '---------------------------------------------------------'
-	@echo 'BUILT_ON_IP      $(BUILT_ON_IP)'
-	@echo 'BUILT_ON_OS      $(BUILT_ON_OS)'
-	@echo 'DATE             $(DATE)'
-	@echo 'LATEST_COMMIT    $(LATEST_COMMIT)'
-	@echo 'BRANCH           $(BRANCH)'
-	@echo 'COMMIT_CNT       $(COMMIT_CNT)'
-	@echo 'BUILD_NUMBER     $(BUILD_NUMBER)'
-	@echo 'COMPILE_LDFLAGS  $(COMPILE_LDFLAGS)'
-	@echo 'PATH             $(PATH)'
-	@echo 'PACKR_EXECUTABLE "$(PACKR_EXECUTABLE)"'
+	@echo 'BUILT_ON_IP       $(BUILT_ON_IP)'
+	@echo 'BUILT_ON_OS       $(BUILT_ON_OS)'
+	@echo 'DATE              $(DATE)'
+	@echo 'LATEST_COMMIT     $(LATEST_COMMIT)'
+	@echo 'BRANCH            $(BRANCH)'
+	@echo 'COMMIT_CNT        $(COMMIT_CNT)'
+	@echo 'BUILD_NUMBER      $(BUILD_NUMBER)'
+	@echo 'COMPILE_LDFLAGS   $(COMPILE_LDFLAGS)'
+	@echo 'PATH              $(PATH)'
+	@echo 'PACKR2_EXECUTABLE $(PACKR2_EXECUTABLE)'
 	@echo '---------------------------------------------------------'
 	@echo ''
 
@@ -59,6 +59,7 @@ help: ## This help.
 ## Build of binaries
 ##
 ####################################################################################################################
+all: example test ## build example and run tests
 
 binaries: example ## build binaries in bin dir
 
@@ -68,15 +69,15 @@ create_dir:
 	@ln -s ../web $(BIN_DIR)/web
 
 check_prereq: create_dir
-ifndef PACKR_EXECUTABLE
-	go get -u github.com/gobuffalo/packr/packr
+ifndef PACKR2_EXECUTABLE
+	go get -u github.com/gobuffalo/packr/v2/packr2
 endif
-	$(warning "found packr")
+	$(warning "found packr2")
 
 
 
 build_app: create_dir
-		packr build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)
+		packr2 build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)
 
 
 example: build_info ## build example binary in bin dir

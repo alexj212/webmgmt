@@ -34,7 +34,9 @@ func WriteNewFile(fpath string, in io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("%s: creating new file: %v", fpath, err)
 	}
-	defer out.Close()
+	defer func() {
+		_ = out.Close()
+	}()
 
 	//fmt.Printf("WriteNewFile: %v\n", fm)
 	//

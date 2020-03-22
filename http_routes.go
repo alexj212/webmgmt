@@ -2,16 +2,14 @@ package webmgmt
 
 import (
 	"fmt"
-	"github.com/gobuffalo/packd"
 	"net/http"
-	"os"
 	"strings"
 
+	"github.com/gobuffalo/packd"
+
+	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/potakhov/loge"
-
-	"github.com/gobuffalo/packr"
 )
 
 //initRouter will initialize the Router with the admin web app. It registers the webapp and assets file handler
@@ -23,7 +21,7 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	loge.Info("app.Config.WebPath: %v\n", app.webPath)
+	// loge.Info("app.Config.WebPath: %v\n", app.webPath)
 	router.HandleFunc(app.webPath+"ws", func(w http.ResponseWriter, r *http.Request) {
 		// loge.Info("/ws invoked")
 		serveWs(app, w, r)
@@ -31,21 +29,9 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 
 	var fileHandler http.Handler
 
-	if app.staticHtmlDir != "" {
-		fi, err := os.Stat(app.staticHtmlDir)
-		if err == nil && fi.IsDir() {
-			fileHandler = http.FileServer(http.Dir(app.staticHtmlDir))
-		}
-	}
-
-	if fileHandler == nil {
-		box := packr.NewBox("./web")
-		fileHandler = http.FileServer(box)
-	}
-
+	fileHandler = http.FileServer(app.fileSystem)
 	router.HandleFunc(app.webPath+"/version", app.handleServerVersion)
 	router.PathPrefix(app.webPath).Handler(http.StripPrefix(app.webPath, fileHandler))
-
 
 	reqHandlers := handlers.CORS(
 		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
@@ -64,13 +50,11 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 	return h
 }
 
-
 // handleServerVersion handles the server version rest handler
 func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) {
 	HttpNocacheJson(w)
 	SendJson(w, r, AppBuildInfo)
 }
-
 
 // SaveTemplates will save the prepacked templates for local editing. File structure will be recreated under the output dir.
 func SaveAssets(outputDir string) error {
@@ -87,7 +71,7 @@ func SaveAssets(outputDir string) error {
 		outputDir = "."
 	}
 
-	box := packr.NewBox("./web")
+	box := packr.New("webmgmt", "./web")
 
 	box.Walk(func(s string, file packd.File) error {
 		fileName := fmt.Sprintf("%s/%s", outputDir, s)

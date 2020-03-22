@@ -13,3 +13,7 @@
 .idea
 bin
 go.sum
+
+packrd/*
+packrd/packed-packr.go
+webmgmt-packr.go

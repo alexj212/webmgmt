@@ -10,9 +10,11 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/alexj212/webmgmt"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"github.com/potakhov/loge"
+
+	"github.com/alexj212/webmgmt"
 )
 
 const InstanceId = "InstanceId"
@@ -68,6 +70,28 @@ func main() {
 
 	loge.Info("NewMgmtApp: cfg.httpListen %v \n", HttpListen)
 
+	var root http.FileSystem
+	staticHtmlDir := "./web"
+
+	if staticHtmlDir != "" {
+		fi, err := os.Stat(staticHtmlDir)
+		if err == nil && fi.IsDir() {
+			loge.Info("using file serving from local disk: %v\n", fi.Name())
+			root = http.Dir(staticHtmlDir)
+		}
+	}
+
+	if root == nil {
+		loge.Info("using file serving from packed resources \n")
+		box := packr.New("webmgmt", staticHtmlDir)
+		loge.Info("Box Details: Name: %v Path: %v ResolutionDir: %v", box.Name, box.Path, box.ResolutionDir)
+
+		for i, file := range box.List() {
+			loge.Info("   [%d] [%s]", i, file)
+		}
+		root = box
+	}
+
 	var err error
 	listener, err = net.Listen("tcp", fmt.Sprintf(":%v", HttpListen))
 	if err != nil {
@@ -87,7 +111,7 @@ func main() {
 	webmgmt.AppBuildInfo.RuntimeVer = runtime.Version()
 
 	router := mux.NewRouter()
-	app, err := Setup(router)
+	app, err := Setup(router, root)
 	if err != nil {
 		loge.Error("Error starting server: %v", err)
 		os.Exit(-1)
