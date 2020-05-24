@@ -51,7 +51,7 @@ func (c *CommandArgs) PealOff(pos int) string {
 func (c *CommandArgs) Debug() string {
 	var buffer bytes.Buffer
 
-	buffer.WriteString(fmt.Sprintf("fullcmd: %v  args: [%v]", c.CmdLine, strings.Join(c.Args, ", ")))
+	buffer.WriteString(fmt.Sprintf("CmdName: %v fullcmd: %v  args: [%v]", c.CmdName, c.CmdLine, strings.Join(c.Args, ", ")))
 	buffer.WriteString(fmt.Sprintf("flagSet.NArg(): %v\n", c.FlagSet.NArg()))
 	for i, val := range c.FlagSet.Args() {
 		buffer.WriteString(fmt.Sprintf("flagSet.Args()[%d]: %v\n", i, val))

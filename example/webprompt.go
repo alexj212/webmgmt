@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -72,59 +71,102 @@ func Setup(router *mux.Router, fs http.FileSystem) (mgmtApp *webmgmt.MgmtApp, er
 		loge.Info("user auth failed on system: %v - %v", client.Username(), client.Ip())
 	}
 
-	cmd := &webmgmt.Command{Exec: toggleTicker, Help: "Start/Stop ticker that periodically sends updates to client"}
-	webmgmt.Commands["ticker"] = cmd
+	cmd := &webmgmt.Command{
+		Use:   "main",
+		Short: "Main Command with subs",
+		Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
+			client.StdOut().Write([]byte("main cmd\n"))
+			client.Send(webmgmt.AppendNormalText("main exec"))
+			client.Send(webmgmt.AppendNormalText(args.Debug()))
+			client.Send(webmgmt.AppendNormalText("---------------------------"))
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+			return
+		}}
+	webmgmt.Commands.AddCommand(cmd)
+
+	cmd.AddCommand(&webmgmt.Command{
+		Use:   "sub1",
+		Short: "Main sub1 Command ",
+		Long:  "Main sub1 Command long help file",
+		Example: `
+this i the example
+
+main sub1 --cnt 5
+`,
+		Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
+			client.StdErr().Write([]byte("main sub1 cmd\n"))
+			client.Send(webmgmt.AppendNormalText("main sub1"))
+			client.Send(webmgmt.AppendNormalText(args.Debug()))
+			client.Send(webmgmt.AppendNormalText("---------------------------"))
+			return
+		},
+	})
+
+	cmd.AddCommand(&webmgmt.Command{
+		Use:   "sub2",
+		Short: "Main sub2 Command ",
+		Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
+			client.StdErr().Write([]byte("main sub2 cmd\n"))
+			client.Send(webmgmt.AppendNormalText("main sub2"))
+			client.Send(webmgmt.AppendNormalText(args.Debug()))
+			client.Send(webmgmt.AppendNormalText("---------------------------"))
+			return
+		},
+	})
+
+	cmd = &webmgmt.Command{Use: "ticker", Exec: toggleTicker, Short: "Start/Stop ticker that periodically sends updates to client"}
+	webmgmt.Commands.AddCommand(cmd)
+
+	cmd = &webmgmt.Command{Use: "image", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.AppendRawText(webmgmt.Image(200, 200, "https://avatars1.githubusercontent.com/u/174203?s=200&v=4", "me")))
 		return
-	}, Help: "Returns raw html to display image in terminal"}
-	webmgmt.Commands["image"] = cmd
+	}, Short: "Returns raw html to display image in terminal"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "link", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.AppendRawText(webmgmt.Link("http://www.slashdot.org", webmgmt.Color("orange", "slashdot"))))
 		return
-	}, Help: "Displays clickable link in terminal"}
-	webmgmt.Commands["link"] = cmd
+	}, Short: "Displays clickable link in terminal"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "prompt", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.SetPrompt(webmgmt.Color("red", client.Username()) + "@" + webmgmt.Color("green", "myserver") + ":&nbsp;"))
 		return
-	}, Help: "Updates the prompt to a multi colored prompt"}
-	webmgmt.Commands["prompt"] = cmd
+	}, Short: "Updates the prompt to a multi colored prompt"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: lines, ExecLevel: webmgmt.ALL, Help: "Displays N lines of text"}
-	webmgmt.Commands["lines"] = cmd
+	cmd = &webmgmt.Command{Use: "lines", Exec: lines, ExecLevel: webmgmt.ALL, Short: "Displays N lines of text", HasFlags: true}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "status", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.SetStatus("Hello World"))
 		return
 	},
-		Help: "Sets the status to Hello World"}
-	webmgmt.Commands["status"] = cmd
+		Short: "Sets the status to Hello World"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "hidestatus", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.SetStatus(""))
 		return
 	},
-		Help: "Clears the status"}
-	webmgmt.Commands["hidestatus"] = cmd
+		Short: "Clears the status"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "eval", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.Eval("alert ('alex');"))
 		return
-	}, Help: "Evals sends js to the client to be evaluated"}
-	webmgmt.Commands["eval"] = cmd
+	}, Short: "Evals sends js to the client to be evaluated"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "clickable", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		commands := []string{"help", "cls", "lines", "link", "image"}
 		client.Send(webmgmt.ClickableCommands(commands))
 		client.Send(webmgmt.Eval("alert ('alex');"))
 		return
-	}, Help: "Sends some clickable commands to be displayed"}
-	webmgmt.Commands["clickable"] = cmd
+	}, Short: "Sends some clickable commands to be displayed"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "table", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 
 		var tableCode = `
 <table style="width:100%">
@@ -142,10 +184,10 @@ func Setup(router *mux.Router, fs http.FileSystem) (mgmtApp *webmgmt.MgmtApp, er
 		client.Send(webmgmt.AppendRawText(tableCode))
 		return
 	},
-		Help: "Example table returned to the client"}
-	webmgmt.Commands["table"] = cmd
+		Short: "Example table returned to the client"}
+	webmgmt.Commands.AddCommand(cmd)
 
-	cmd = &webmgmt.Command{Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+	cmd = &webmgmt.Command{Use: "canvas", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 
 		id := fmt.Sprintf("id_%v", time.Now().Unix())
 		width := 300
@@ -175,8 +217,8 @@ console.log('done');
 		client.Send(webmgmt.Eval(jsCode))
 		return
 	},
-		Help: "Returns a canvas with js to update it"}
-	webmgmt.Commands["canvas"] = cmd
+		Short: "Returns a canvas with js to update it"}
+	webmgmt.Commands.AddCommand(cmd)
 
 	config.HandleCommand = webmgmt.HandleCommands()
 
@@ -188,22 +230,34 @@ console.log('done');
 	return
 }
 
-func lines(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+func lines(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
+
+	//log.Printf("lines CmdName: %v", args.CmdName)
+	//log.Printf("lines CmdLine: %v", args.CmdLine)
+	//log.Printf("lines Args: %v", args.Args)
+	//log.Printf("lines FlagSet.Args: %v", args.FlagSet.Args())
+	//log.Printf("lines Debug: %v", args.Debug())
+
 	cnt := args.FlagSet.Int("cnt", 5, "number of lines to print")
 	err = args.Parse()
+	log.Printf("lines err: %v", err)
 	if err != nil {
 		return
 	}
 
+	log.Printf("lines cnt: %v", *cnt)
 	client.Send(webmgmt.AppendText(fmt.Sprintf("lines invoke"), "green"))
 	log.Printf("lines invoked")
 	for i := 0; i < *cnt; i++ {
-		client.Send(webmgmt.AppendText(fmt.Sprintf("line[%d]", i), "green"))
+		txt := fmt.Sprintf("line[%d]", i)
+		client.Send(webmgmt.AppendText(txt, "green"))
+		client.StdErr().Write([]byte(txt))
+		client.StdOut().Write([]byte(txt))
 	}
 	return
 }
 
-func toggleTicker(client webmgmt.Client, args *webmgmt.CommandArgs, out io.Writer) (err error) {
+func toggleTicker(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 
 	tickerDone, ok := client.Misc()["ticker_done"]
 	if ok {

@@ -68,6 +68,14 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 	c.webPath = config.WebPath
 	c.clientInitializer = config.ClientInitializer
 
+	if c.fileSystem != nil {
+		_, err := c.fileSystem.Open("index.html")
+		if err != nil {
+			loge.Info("NewMgmtApp, was passed a fileSystem but it does not contain index.html - resetting\n")
+			c.fileSystem = nil
+		}
+	}
+
 	if c.fileSystem == nil {
 		loge.Info("using file serving from packed resources \n")
 		box := packr.New("webmgmt", "./web")

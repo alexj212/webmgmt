@@ -3,6 +3,7 @@ package webmgmt
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -48,6 +49,8 @@ type Client interface {
 	Ip() string
 	ExecLevel() ExecLevel
 	SetExecLevel(level ExecLevel)
+	StdOut() io.Writer
+	StdErr() io.Writer
 }
 
 // Client is a middleman between the websocket connection and the hub.
@@ -63,6 +66,9 @@ type WSClient struct {
 	httpReq       *http.Request
 	history       []string
 	execLevel     ExecLevel
+	stdOut        io.Writer
+	stdErr        io.Writer
+	id            uint64
 }
 
 // serveWs handles websocket requests from the peer.
@@ -75,6 +81,10 @@ func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
 
 	client := &WSClient{app: app, conn: conn, send: make(chan ServerMessage, 256), connected: true, httpReq: r}
 	client.app.hub.register <- client
+
+	client.stdOut = &WSClientWriter{f: client.WriteStdOut}
+	client.stdErr = &WSClientWriter{f: client.WriteStdErr}
+
 	client.misc = make(map[string]interface{})
 	client.history = make([]string, 0)
 	app.clientInitializer(client)
@@ -135,7 +145,7 @@ func (c *WSClient) readPump() {
 		if err == nil {
 			c.handleMessage(msg)
 		} else {
-			loge.Error("Error converting ws data to json error: %v\n", err)
+			loge.Error("Error converting payload[%v] data to json error: %v\n", string(message), err)
 		}
 	}
 }
@@ -316,4 +326,38 @@ func (c *WSClient) ExecLevel() ExecLevel {
 // ExecLevel returns exec level for the client
 func (c *WSClient) SetExecLevel(level ExecLevel) {
 	c.execLevel = level
+}
+
+// StdOut returns writer for the client
+func (c *WSClient) StdOut() io.Writer {
+	return c.stdOut
+}
+
+// StdErr returns writer for the client
+func (c *WSClient) StdErr() io.Writer {
+	return c.stdErr
+}
+
+func (c *WSClient) WriteStdOut(p []byte) (n int, err error) {
+	if len(p) > 0 {
+		c.Send(AppendNormalText(string(p)))
+	}
+
+	return len(p), nil
+}
+
+func (c *WSClient) WriteStdErr(p []byte) (n int, err error) {
+	if len(p) > 0 {
+		c.Send(AppendErrorText(string(p)))
+	}
+
+	return len(p), nil
+}
+
+type WSClientWriter struct {
+	f func(p []byte) (n int, err error)
+}
+
+func (c *WSClientWriter) Write(p []byte) (n int, err error) {
+	return c.f(p)
 }

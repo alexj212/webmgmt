@@ -54,6 +54,51 @@ help: ## This help.
 
 
 
+
+####################################################################################################################
+##
+## Code vetting tools
+##
+####################################################################################################################
+
+vet: ## run go vet on the project
+	go vet .
+
+tools: ## install dependent tools
+	go get -u honnef.co/go/tools/cmd/staticcheck
+	go get -u honnef.co/go/tools/cmd/gosimple
+	go get -u honnef.co/go/tools/cmd/unused
+	go get -u github.com/gordonklaus/ineffassign
+	go get -u github.com/fzipp/gocyclo
+	go get -u github.com/golang/lint/golint
+	go get -u github.com/gobuffalo/packr/v2/packr2
+
+lint: ## run golint on the project
+	golint ./...
+
+staticcheck: ## run staticcheck on the project
+	staticcheck -ignore "$(shell cat .checkignore)" .
+
+gosimple: ## run gosimple on the project
+	# gosimple -ignore "$(shell cat .gosimpleignore)" .
+	gosimple .
+
+gocyclo: ## run gocyclo on the project
+	@ gocyclo -avg -over 15 $(shell find . -name "*.go" |egrep -v "pb\.go|_test\.go")
+
+check: staticcheck gosimple unused gocyclo ## run code checks on the project
+
+doc: ## run godoc
+	godoc -http=:6060
+
+deps:## analyze project deps
+	go list -f '{{ join .Deps  "\n"}}' . |grep "/" | grep -v "$(PROJ_PATH)"| grep "\." | sort |uniq
+
+fmt: ## run fmt on the project
+	## go fmt .
+	gofmt -s -d -w -l .
+
+
 ####################################################################################################################
 ##
 ## Build of binaries
@@ -107,9 +152,6 @@ clean_example: ## clean example
 
 test: ## run tests
 	go test $(PROJ_PATH)/_test/
-
-fmt: ## run fmt
-	go fmt $(PROJ_PATH)/...
 
 
 
