@@ -1,0 +1,49 @@
+{
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "author": "apj",
+  "license": "MIT",
+  "files": [
+    "bin/",
+    "lib/",
+    "src/"
+  ],
+  "name": "Webmgt",
+  "version": "1.0.0",
+  "description": "Webmgt",
+  "main": "lib/bundle.js",
+  "scripts": {
+    "start": "parcel serve src/index.html",
+    "build": "cross-env NODE_ENV=production parcel build src/index.html --public-url .",
+    "watch": "parcel watch src/index.html",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "devDependencies": {
+    "@fortawesome/fontawesome-free": "^5.13.0",
+    "cross-env": "^7.0.2",
+    "gh-pages": "^3.0.0",
+    "parcel-bundler": "^1.12.4",
+    "sass": "^1.26.7",
+    "typescript": "^3.9.3"
+  },
+  "dependencies": {
+    "bootstrap": "^4.5.0",
+    "install": "^0.13.0",
+    "jquery": "^3.5.1",
+    "jquery-ui": "^1.12.1",
+    "popper.js": "^1.16.1",
+    "socket.io-client": "^2.3.0",
+    "@types/jquery": "^3.3.38"
+  }
+}
