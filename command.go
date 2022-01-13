@@ -526,7 +526,7 @@ func (c *Command) IsSubCommandAvailable(client Client, cmd string) bool {
 }
 
 // Execute runs a command thru execution
-//nolint:gocyclo,goreportcard
+//gocyclo:ignore
 func (c *Command) Execute(client Client, cmdLine *CommandArgs) {
 
 	if cmdLine.CmdName == "help" {

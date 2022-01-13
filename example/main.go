@@ -54,7 +54,7 @@ func init() {
 	onShutdownFunc = defaultShutdown
 }
 
-//nolint:gocyclo
+//gocyclo:ignore
 func main() {
 	var saveTemplateDir string
 	flag.StringVar(&saveTemplateDir, "save", "", "save assets to directory")
