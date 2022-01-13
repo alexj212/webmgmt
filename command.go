@@ -9,12 +9,19 @@ import (
 	"strings"
 )
 
+// CommandFunc function definition for a command
 type CommandFunc func(client Client, args *CommandArgs) error
 
+// ExecLevel type for admin levels
 type ExecLevel int32
 
+// ALL level for all users
 const ALL = ExecLevel(0)
+
+// USER level for default users
 const USER = ExecLevel(1)
+
+// ADMIN level for admin users
 const ADMIN = ExecLevel(2)
 
 // Command is just that, a command for your application.
@@ -499,86 +506,7 @@ func (c *Command) CommandPath() string {
 	return c.Name()
 }
 
-//
-//// Find the target command given the args and command tree
-//// Meant to be run on the highest node. Only searches down.
-//func (c *Command) Find(args []string) (*Command, []string, error) {
-//	var innerfind func(*Command, []string) (*Command, []string)
-//
-//	innerfind = func(c *Command, innerArgs []string) (*Command, []string) {
-//		argsWOflags := stripFlags(innerArgs, c)
-//		if len(argsWOflags) == 0 {
-//			return c, innerArgs
-//		}
-//		nextSubCmd := argsWOflags[0]
-//
-//		cmd := c.findNext(nextSubCmd)
-//		if cmd != nil {
-//			return innerfind(cmd, argsMinusFirstX(innerArgs, nextSubCmd))
-//		}
-//		return c, innerArgs
-//	}
-//
-//	commandFound, a := innerfind(c, args)
-//	if commandFound.Args == nil {
-//		return commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))
-//	}
-//	return commandFound, a, nil
-//}
-//
-//
-//func (c *Command) findNext(next string) *Command {
-//	matches := make([]*Command, 0)
-//	for _, cmd := range c.commands {
-//		if cmd.Name() == next || cmd.HasAlias(next) {
-//			cmd.commandCalledAs.name = next
-//			return cmd
-//		}
-//		if EnablePrefixMatching && cmd.hasNameOrAliasPrefix(next) {
-//			matches = append(matches, cmd)
-//		}
-//	}
-//
-//	if len(matches) == 1 {
-//		return matches[0]
-//	}
-//
-//	return nil
-//}
-
-/*
-		for _, cmd := range Commands.commands {
-			if cmd.Name() == parsed.CmdName {
-
-
-			}
-		}
-
-	cmd, ok := Commands[parsed.CmdName]
-	if !ok {
-		client.Send(AppendText(fmt.Sprintf("Command not found: %v", parsed.CmdLine), "red"))
-		return
-	}
-
-	if client.ExecLevel() >= cmd.ExecLevel {
-
-		err = cmd.Exec(client, parsed, writer)
-		_ = writer.Flush()
-
-		if err != nil {
-			client.Send(AppendText(fmt.Sprintf("%s\n\n", err), ForegroundColor))
-		}
-
-		output := b.String()
-		if output != "" {
-			client.Send(AppendText(output, ForegroundColor))
-		}
-	} else {
-		client.Send(AppendText(fmt.Sprintf("You do not have permission to execute: %v", parsed.CmdLine), "red"))
-		return
-	}
-
-*/
+// IsSubCommandAvailable checks if sub command exists
 func (c *Command) IsSubCommandAvailable(client Client, cmd string) bool {
 
 	if cmd == "help" {
@@ -597,6 +525,8 @@ func (c *Command) IsSubCommandAvailable(client Client, cmd string) bool {
 	return false
 }
 
+// Execute runs a command thru execution
+//nolint:gocyclo,goreportcard
 func (c *Command) Execute(client Client, cmdLine *CommandArgs) {
 
 	if cmdLine.CmdName == "help" {
@@ -622,6 +552,12 @@ func (c *Command) Execute(client Client, cmdLine *CommandArgs) {
 		c.Help(client)
 		return
 	}
+	defer func() {
+		if err := recover(); err != nil {
+			msg := fmt.Sprintf("panic occurred: %v\n", err)
+			client.StdErr().Write([]byte(msg))
+		}
+	}()
 
 	for _, cmd := range c.commands {
 		if cmd.Name() == cmdLine.CmdName {
@@ -638,17 +574,17 @@ func (c *Command) Execute(client Client, cmdLine *CommandArgs) {
 				cmd.Exec(client, cmdLine)
 				return
 
-			} else {
-
-				fmt.Printf("exec C Command executing againt : %v\n", cmdLine.Debug())
-				if len(cmdLine.Args) > 0 && (cmdLine.Args[0] == "help" || cmdLine.Args[0] == "--help" || cmdLine.Args[0] == "-help") {
-					cmd.Help(client)
-				} else {
-					cmd.Exec(client, cmdLine)
-				}
-
-				return
 			}
+
+			fmt.Printf("exec C Command executing againt : %v\n", cmdLine.Debug())
+			if len(cmdLine.Args) > 0 && (cmdLine.Args[0] == "help" || cmdLine.Args[0] == "--help" || cmdLine.Args[0] == "-help") {
+				cmd.Help(client)
+			} else {
+				cmd.Exec(client, cmdLine)
+			}
+
+			return
+
 		}
 	}
 
@@ -661,11 +597,3 @@ func (c *Command) Execute(client Client, cmdLine *CommandArgs) {
 		client.StdErr().Write([]byte(val))
 	}
 }
-
-/*
-
-print hello world
-
-
-
-*/

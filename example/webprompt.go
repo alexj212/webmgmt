@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -12,8 +12,8 @@ import (
 	"github.com/alexj212/webmgmt"
 )
 
-func Setup(router *mux.Router, fs http.FileSystem) (mgmtApp *webmgmt.MgmtApp, err error) {
-
+func setup(router *mux.Router, fs fs.FS) (mgmtApp *webmgmt.MgmtApp, err error) {
+	cmds := &webmgmt.Command{}
 	//## Initialization
 	// 1. Create a Config struct and set the template path to ./web
 	// 2. Set the DefaultPrompt
@@ -82,7 +82,7 @@ func Setup(router *mux.Router, fs http.FileSystem) (mgmtApp *webmgmt.MgmtApp, er
 
 			return
 		}}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd.AddCommand(&webmgmt.Command{
 		Use:   "sub1",
@@ -115,48 +115,48 @@ main sub1 --cnt 5
 	})
 
 	cmd = &webmgmt.Command{Use: "ticker", Exec: toggleTicker, Short: "Start/Stop ticker that periodically sends updates to client"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "image", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.AppendRawText(webmgmt.Image(200, 200, "https://avatars1.githubusercontent.com/u/174203?s=200&v=4", "me")))
 		return
 	}, Short: "Returns raw html to display image in terminal"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "link", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.AppendRawText(webmgmt.Link("http://www.slashdot.org", webmgmt.Color("orange", "slashdot"))))
 		return
 	}, Short: "Displays clickable link in terminal"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "prompt", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.SetPrompt(webmgmt.Color("red", client.Username()) + "@" + webmgmt.Color("green", "myserver") + ":&nbsp;"))
 		return
 	}, Short: "Updates the prompt to a multi colored prompt"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "lines", Exec: lines, ExecLevel: webmgmt.ALL, Short: "Displays N lines of text", HasFlags: true}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "status", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.SetStatus("Hello World"))
 		return
 	},
 		Short: "Sets the status to Hello World"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "hidestatus", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.SetStatus(""))
 		return
 	},
 		Short: "Clears the status"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "eval", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		client.Send(webmgmt.Eval("alert ('alex');"))
 		return
 	}, Short: "Evals sends js to the client to be evaluated"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "clickable", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 		commands := []string{"help", "cls", "lines", "link", "image"}
@@ -164,7 +164,7 @@ main sub1 --cnt 5
 		client.Send(webmgmt.Eval("alert ('alex');"))
 		return
 	}, Short: "Sends some clickable commands to be displayed"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "table", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 
@@ -185,7 +185,7 @@ main sub1 --cnt 5
 		return
 	},
 		Short: "Example table returned to the client"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
 	cmd = &webmgmt.Command{Use: "canvas", Exec: func(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 
@@ -218,9 +218,9 @@ console.log('done');
 		return
 	},
 		Short: "Returns a canvas with js to update it"}
-	webmgmt.Commands.AddCommand(cmd)
+	cmds.AddCommand(cmd)
 
-	config.HandleCommand = webmgmt.HandleCommands()
+	config.HandleCommand = webmgmt.HandleCommands(cmds)
 
 	config.UnregisterUser = func(client webmgmt.Client) {
 		loge.Info("user logged off system: %v", client.Username())

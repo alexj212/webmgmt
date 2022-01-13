@@ -104,7 +104,7 @@ var privateRanges = []ipRange{
 	},
 }
 
-// isPrivateSubnet - check to see if this ip is in a private subnet
+// IsPrivateSubnet - check to see if this ip is in a private subnet
 func IsPrivateSubnet(ipAddress net.IP) bool {
 	// my use case is only concerned with ipv4 atm
 	if ipCheck := ipAddress.To4(); ipCheck != nil {
@@ -119,9 +119,9 @@ func IsPrivateSubnet(ipAddress net.IP) bool {
 	return false
 }
 
-// GetIpAddress will take a http request and check headers if it has been proxied to extract what the server believes to be the client ip address.
+// GetIPAddress will take a http request and check headers if it has been proxied to extract what the server believes to be the client ip address.
 func GetIPAddress(r *http.Request) string {
-	var ip = ""
+	ip := ""
 	for _, h := range []string{"X-Forwarded-For", "X-Real-Ip"} {
 		addresses := strings.Split(r.Header.Get(h), ",")
 		// march from right to left until we get a public address

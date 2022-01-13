@@ -6,8 +6,12 @@ import (
 )
 
 var (
+
+	// NormalOutputColor color definition for normal output
 	NormalOutputColor = "white"
-	ErrorOutputColor  = "red"
+
+	// ErrorOutputColor color definition for error output
+	ErrorOutputColor = "red"
 )
 
 // ServerMessage is the interface that all messages from the server to client will implement.
@@ -25,13 +29,14 @@ func (c *ServerMessageBase) Get() interface{} {
 	return c
 }
 
-// TextMessaage is the struct for the server message that is sent to the client to tell the client to display text in the terminal window.
+// TextMessage is the struct for the server message that is sent to the client to tell the client to display text in the terminal window.
 type TextMessage struct {
 	ServerMessageBase
 	Text  string `json:"text"`
 	Color string `json:"color"`
 }
 
+// Get will return self
 func (c *TextMessage) Get() interface{} {
 	return c
 }
@@ -42,6 +47,7 @@ type RawTextMessage struct {
 	Text string `json:"text"`
 }
 
+// Get will return self
 func (c *RawTextMessage) Get() interface{} {
 	return c
 }
@@ -52,6 +58,7 @@ type Clickable struct {
 	Commands []string `json:"commands"`
 }
 
+// Get will return self
 func (c *Clickable) Get() interface{} {
 	return c
 }
@@ -62,6 +69,7 @@ type Prompt struct {
 	Prompt string `json:"prompt"`
 }
 
+// Get will return self
 func (c *Prompt) Get() interface{} {
 	return c
 }
@@ -72,6 +80,7 @@ type HistoryMode struct {
 	Val bool `json:"val"`
 }
 
+// Get will return self
 func (c *HistoryMode) Get() interface{} {
 	return c
 }
@@ -82,6 +91,7 @@ type Authenticated struct {
 	Val bool `json:"val"`
 }
 
+// Get will return self
 func (c *Authenticated) Get() interface{} {
 	return c
 }
@@ -92,6 +102,7 @@ type Echo struct {
 	Val bool `json:"val"`
 }
 
+// Get will return self
 func (c *Echo) Get() interface{} {
 	return c
 }
@@ -102,11 +113,12 @@ type Status struct {
 	Text string `json:"text"`
 }
 
+// Get will return self
 func (c *Status) Get() interface{} {
 	return c
 }
 
-// AppendRawText will return a command packet that will append the text to the bottom of the output in the web terminal. This will format the text message in the color defined.
+// AppendText will return a command packet that will append the text to the bottom of the output in the web terminal. This will format the text message in the color defined.
 func AppendText(text, color string) ServerMessage {
 	something := &TextMessage{}
 	something.Type = "text"
@@ -139,7 +151,7 @@ func SetPrompt(prompt string) ServerMessage {
 	return something
 }
 
-// SetHistoryMode will return a command packet that will notify the web terminal that is should capture/not capture commands entered into the client's history/
+// SetHistoryMode will return a command packet that will notify the web terminal that should capture/not capture commands entered into the client's history/
 func SetHistoryMode(val bool) ServerMessage {
 	something := &HistoryMode{}
 	something.Type = "history"
@@ -163,7 +175,7 @@ func SetEchoOn(val bool) ServerMessage {
 	return something
 }
 
-// SetStatus will return a command packet that will clear the current browser.
+// Cls will return a command packet that will clear the current browser.
 func Cls() ServerMessage {
 	something := &ServerMessageBase{}
 	something.Type = "cls"
@@ -178,7 +190,7 @@ func SetStatus(text string) ServerMessage {
 	return something
 }
 
-// Eval will return a command packet that will be evaluated on the client browser. The text is the java script that will be evaluated.
+// Eval will return a command packet that will be evaluated on the client browser. The text is the javascript that will be evaluated.
 func Eval(text string) ServerMessage {
 	something := &Status{}
 	something.Type = "eval"
@@ -200,7 +212,7 @@ func Color(color, text string) string {
 	return fmt.Sprintf("<span style=\"color:%s\">%s</span>", color, html.EscapeString(text))
 }
 
-// Image is used to take several predefined fields and return an html snipped to display an image.
+// Image is used to take several predefined fields and return a html snippet to display an image.
 func Image(width, height int, src, alt string) string {
 	return fmt.Sprintf("<img width=\"%d\" height=\"%d\" src=\"%s\" alt=\"%s\"/>", width, height, src, alt)
 }

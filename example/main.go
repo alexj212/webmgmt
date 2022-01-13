@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/pkg/browser"
 	"math/rand"
 	"net"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"github.com/potakhov/loge"
 	"gitlab.paltalk.com/go/utils/netutils"
@@ -21,31 +21,40 @@ import (
 	"github.com/alexj212/webmgmt"
 )
 
-const InstanceId = "InstanceId"
-const Name = "Name"
-
 var (
-	BuildDate    string
+	// BuildDate info from build
+	BuildDate string
+
+	// LatestCommit info from build
 	LatestCommit string
-	BuildNumber  string
-	BuiltOnIp    string
-	BuiltOnOs    string
-	RuntimeVer   string
+
+	// BuildNumber info from build
+	BuildNumber string
+
+	// BuiltOnIp info from build
+	BuiltOnIp string
+
+	// BuiltOnOs info from build
+	BuiltOnOs string
+
+	// RuntimeVer info from build
+	RuntimeVer string
 )
 
-var OsSignal chan os.Signal
-var OnShutdownFunc func(os.Signal)
+var osSignal chan os.Signal
+var onShutdownFunc func(os.Signal)
 var logService *netutils.WsService
-
-func init() {
-	OsSignal = make(chan os.Signal, 1)
-	OnShutdownFunc = defaultShutdown
-}
-
+var httpListen = 1099
 var listener net.Listener   // Listen socket for HTTP
 var httpServer *http.Server // http server
 var quit chan bool          // quit channel
 
+func init() {
+	osSignal = make(chan os.Signal, 1)
+	onShutdownFunc = defaultShutdown
+}
+
+//nolint:gocyclo
 func main() {
 	var saveTemplateDir string
 	flag.StringVar(&saveTemplateDir, "save", "", "save assets to directory")
@@ -76,37 +85,29 @@ func main() {
 
 	defer logeShutdown()
 
-	HttpListen := 1099
-	fmt.Printf("HttpListen           : %v\n", HttpListen)
+	if saveTemplateDir != "" {
+		err := webmgmt.SaveAssets(saveTemplateDir, webmgmt.DefaultWebEmbedFS, false)
+		if err != nil {
+			loge.Printf("Error writing assets: %v", err)
+			os.Exit(-1)
+		}
+		os.Exit(1)
+	}
 
-	loge.Info("NewMgmtApp: cfg.httpListen %v \n", HttpListen)
+	fmt.Printf("HttpListen           : %v\n", httpListen)
 
-	var root http.FileSystem
+	loge.Info("NewMgmtApp: cfg.httpListen %v \n", httpListen)
 	staticHtmlDir := "./web"
 
-	if staticHtmlDir != "" {
-		fi, err := os.Stat(staticHtmlDir)
-		if err == nil && fi.IsDir() {
-			loge.Info("using file serving from local disk: %v\n", fi.Name())
-			root = http.Dir(staticHtmlDir)
-		}
-	}
-
-	if root == nil {
-		loge.Info("using file serving from packed resources \n")
-		box := packr.New("webmgmt", staticHtmlDir)
-		loge.Info("Box Details: Name: %v Path: %v ResolutionDir: %v", box.Name, box.Path, box.ResolutionDir)
-
-		for i, file := range box.List() {
-			loge.Info("   [%d] [%s]", i, file)
-		}
-		root = box
-	}
-
-	var err error
-	listener, err = net.Listen("tcp", fmt.Sprintf(":%v", HttpListen))
+	root, err := webmgmt.SetupFS(webmgmt.DefaultWebEmbedFS, staticHtmlDir, false)
 	if err != nil {
-		loge.Error("error initializing http listener: %s", HttpListen)
+		loge.Error("error initializing fs: %v", err)
+		os.Exit(-1)
+	}
+
+	listener, err = net.Listen("tcp", fmt.Sprintf(":%v", httpListen))
+	if err != nil {
+		loge.Error("error initializing http listener: %s", httpListen)
 
 	}
 	httpServer = &http.Server{}
@@ -122,18 +123,10 @@ func main() {
 	webmgmt.AppBuildInfo.RuntimeVer = runtime.Version()
 
 	router := mux.NewRouter()
-	app, err := Setup(router, root)
+	app, err := setup(router, root)
 	if err != nil {
 		loge.Error("Error starting server: %v", err)
 		os.Exit(-1)
-	}
-
-	if saveTemplateDir != "" {
-		err = webmgmt.SaveAssets(saveTemplateDir)
-		if err != nil {
-			loge.Printf("Error writing assets: %v", err)
-			os.Exit(-1)
-		}
 	}
 
 	go func() {
@@ -204,17 +197,17 @@ func main() {
 
 }
 
-// Loop on signal processing
+// LoopForever on signal processing
 func LoopForever() {
 	loge.Info("Entering infinite loop\n")
 
-	signal.Notify(OsSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
-	sig := <-OsSignal
+	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
+	sig := <-osSignal
 
 	loge.Info("Exiting infinite loop received OsSignal\n")
 
-	if OnShutdownFunc != nil {
-		OnShutdownFunc(sig)
+	if onShutdownFunc != nil {
+		onShutdownFunc(sig)
 	}
 }
 
@@ -246,6 +239,9 @@ func run() error {
 		ch <- httpServer.Serve(listener)
 	}()
 
+	url := fmt.Sprintf("http://localhost:%v", httpListen)
+	browser.OpenURL(url)
+
 	for {
 		select {
 		case <-quit:
@@ -257,7 +253,7 @@ func run() error {
 	}
 }
 
-func Shutdown() {
+func shutdown() {
 	loge.Info("MgmtApp Shutdown invoked")
 	close(quit)
 }

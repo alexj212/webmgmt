@@ -69,9 +69,9 @@ func (c *CommandArgs) Shift() (*CommandArgs, error) {
 	if strings.HasPrefix(c.CmdLine, c.CmdName) {
 		newCmdLine := c.CmdLine[len(c.CmdName):]
 		return NewCommandArgs(newCmdLine, c.output)
-	} else {
-		return nil, errors.New("Unable to shift command line. ")
 	}
+	return nil, errors.New("Unable to shift command line. ")
+
 }
 
 // NewCommandArgs will take a raw string and output. The Raw string will be parsed into a CommandArgs structure.

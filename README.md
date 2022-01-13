@@ -234,7 +234,7 @@ type Config struct {
 
 ## Html Assets
 The webmgmt uses several html and js resources that are delivered to the client. They are embedded into the webmgmt library with the 
-use of packr that can mimic a filesystem, while the assets are encoded into a go file via the packr command. Users of the library 
+use of embed that can mimic a filesystem, while the assets are encoded into a go file via the packr command. Users of the library 
 can set a directory to be used instead of the embedded assets. There is a utility method  
 `func webmgmt.SaveAssets(outputDir string) error` This will save all assets into a directory specified. Then a developer can customize 
 the assets. In webmgmt.Config the field `StaticHtmlDir` if defined and it exists will be used to serve assets from. If that field is not set or 

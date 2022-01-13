@@ -6,33 +6,37 @@ import (
 	"fmt"
 )
 
-var Commands *Command
-var ForegroundColor string = "white"
+// ForegroundColor default foreground color definition
+var ForegroundColor = "white"
+
+// DefaultCommands main struct for all commands
+var DefaultCommands = &Command{ExecLevel: ALL}
+
+// HttpCommand command to view http session details
+var HttpCommand = &Command{Use: "http", Exec: displayHttpInfo, Short: "Display http request information", ExecLevel: ALL}
+
+// HistoryCommand command to view history of commands executed
+var HistoryCommand = &Command{Use: "history", Exec: displayHistory, Short: "Show the history of commands executed", ExecLevel: ALL}
+
+// UserCommand command to view user details
+var UserCommand = &Command{Use: "user", Exec: displayUserInfo, Short: "Show user details about logged in user", ExecLevel: ALL}
+
+// ClsCommand command to clear web screen
+var ClsCommand = &Command{Use: "cls", Exec: func(client Client, args *CommandArgs) (err error) {
+	client.Send(Cls())
+	return
+}, Short: "send cls event to terminal client", ExecLevel: ALL}
 
 func init() {
-	Commands = &Command{ExecLevel: ALL}
-
-	var cmd *Command
-
-	cmd = &Command{Use: "http", Exec: displayHttpInfo, Short: "Display http request information", ExecLevel: ALL}
-	Commands.AddCommand(cmd)
-
-	cmd = &Command{Use: "history", Exec: displayHistory, Short: "Show the history of commands executed", ExecLevel: ALL}
-	Commands.AddCommand(cmd)
-
-	cmd = &Command{Use: "user", Exec: displayUserInfo, Short: "Show user details about logged in user", ExecLevel: ALL}
-	Commands.AddCommand(cmd)
-
-	cmd = &Command{Use: "cls", Exec: func(client Client, args *CommandArgs) (err error) {
-		client.Send(Cls())
-		return
-	}, Short: "send cls event to terminal client", ExecLevel: ALL}
-	Commands.AddCommand(cmd)
-
+	DefaultCommands.AddCommand(HttpCommand)
+	DefaultCommands.AddCommand(HistoryCommand)
+	DefaultCommands.AddCommand(UserCommand)
+	DefaultCommands.AddCommand(ClsCommand)
 	return
 }
 
-func HandleCommands() (handler func(Client, string)) {
+// HandleCommands handler function to execute commands
+func HandleCommands(Commands *Command) (handler func(Client, string)) {
 
 	handler = func(client Client, cmdLine string) {
 		// loge.Info("handleMessage  - authenticated user message.Payload: [" + cmd+"]")
@@ -45,12 +49,11 @@ func HandleCommands() (handler func(Client, string)) {
 		if err != nil {
 			client.Send(AppendText(fmt.Sprintf("Error parsing command: %v", err), "red"))
 			return
-		} else {
-			Commands.Execute(client, parsed)
-			writer.Flush()
-			result := b.String()
-			client.Send(AppendText(result, "white"))
 		}
+		Commands.Execute(client, parsed)
+		writer.Flush()
+		result := b.String()
+		client.Send(AppendText(result, "white"))
 	}
 	return
 }

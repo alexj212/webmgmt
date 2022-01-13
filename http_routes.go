@@ -1,15 +1,9 @@
 package webmgmt
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
-
-	"github.com/gobuffalo/packd"
-
-	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"net/http"
 )
 
 //initRouter will initialize the Router with the admin web app. It registers the webapp and assets file handler
@@ -28,8 +22,8 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 	})
 
 	var fileHandler http.Handler
-
-	fileHandler = http.FileServer(app.fileSystem)
+	webDirHTTPFS := http.FS(app.fileSystem)
+	fileHandler = http.FileServer(webDirHTTPFS)
 	router.HandleFunc(app.webPath+"/version", app.handleServerVersion)
 	router.PathPrefix(app.webPath).Handler(http.StripPrefix(app.webPath, fileHandler))
 
@@ -54,41 +48,4 @@ func (app *MgmtApp) initRouter(Name, InstanceId string, router *mux.Router) http
 func (app *MgmtApp) handleServerVersion(w http.ResponseWriter, r *http.Request) {
 	HttpNocacheJson(w)
 	SendJson(w, r, AppBuildInfo)
-}
-
-// SaveTemplates will save the prepacked templates for local editing. File structure will be recreated under the output dir.
-func SaveAssets(outputDir string) error {
-	fmt.Printf("SaveAssets: %v\n", outputDir)
-	if outputDir == "" {
-		outputDir = "."
-	}
-
-	if strings.HasSuffix(outputDir, "/") {
-		outputDir = outputDir[:len(outputDir)-1]
-	}
-
-	if outputDir == "" {
-		outputDir = "."
-	}
-
-	box := packr.New("webmgmt", "./web")
-
-	box.Walk(func(s string, file packd.File) error {
-		fileName := fmt.Sprintf("%s/%s", outputDir, s)
-
-		fi, err := file.FileInfo()
-		if err == nil {
-			if !fi.IsDir() {
-
-				err := WriteNewFile(fileName, file)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
-	})
-
-	return nil
 }

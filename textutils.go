@@ -25,8 +25,6 @@ func trimRightSpace(s string) string {
 func padSpaceAfter(s string) string {
 	if s == "" {
 		return ""
-	} else {
-
 	}
 	return s + " "
 }

@@ -2,10 +2,9 @@ package webmgmt
 
 import (
 	"fmt"
-	"net/http"
+	"io/fs"
 	"os"
 
-	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/potakhov/loge"
@@ -13,7 +12,7 @@ import (
 
 // MgmtApp struct is the web admin app.
 type MgmtApp struct {
-	fileSystem                      http.FileSystem
+	fileSystem                      fs.FS
 	userAuthenticator               func(client Client, username string, password string) bool
 	handleCommand                   func(c Client, cmd string)
 	notifyClientAuthenticated       func(client Client)
@@ -28,7 +27,7 @@ type MgmtApp struct {
 
 // Config struct  is used to configure a WebMgmt admin handler.
 type Config struct {
-	FileSystem                      http.FileSystem
+	FileSystem                      fs.FS
 	DefaultPrompt                   string
 	WebPath                         string
 	UserAuthenticator               func(client Client, username string, password string) bool
@@ -77,14 +76,8 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 	}
 
 	if c.fileSystem == nil {
-		loge.Info("using file serving from packed resources \n")
-		box := packr.New("webmgmt", "./web")
-		loge.Info("Box Details: Name: %v Path: %v ResolutionDir: %v", box.Name, box.Path, box.ResolutionDir)
-
-		for i, file := range box.List() {
-			loge.Info("   [%d] [%s]", i, file)
-		}
-		c.fileSystem = box
+		loge.Info("using file serving from embedded resources \n")
+		c.fileSystem = DefaultWebEmbedFS
 	}
 
 	_, err := c.fileSystem.Open("index.html")
@@ -96,7 +89,7 @@ func NewMgmtApp(name, instanceId string, config *Config, router *mux.Router) (*M
 		c.userAuthenticator = c.defaultUserAuthenticator
 	}
 	if c.handleCommand == nil {
-		c.handleCommand = HandleCommands()
+		c.handleCommand = HandleCommands(DefaultCommands)
 	}
 	if c.notifyClientAuthenticated == nil {
 		c.notifyClientAuthenticated = c.defaultNotifyClientAuthenticated

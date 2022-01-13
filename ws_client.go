@@ -53,7 +53,7 @@ type Client interface {
 	StdErr() io.Writer
 }
 
-// Client is a middleman between the websocket connection and the hub.
+// WSClient is a middleman between the websocket connection and the hub.
 type WSClient struct {
 	app           *MgmtApp
 	conn          *websocket.Conn    // The websocket connection.
@@ -95,8 +95,9 @@ func serveWs(app *MgmtApp, w http.ResponseWriter, r *http.Request) {
 	go client.readPump()
 
 	app.welcomeUser(client)
-}
+} // serveWs
 
+// Send push ServerMessage to client
 func (c *WSClient) Send(msg ServerMessage) {
 	if c.connected {
 		c.send <- msg
@@ -148,7 +149,7 @@ func (c *WSClient) readPump() {
 			loge.Error("Error converting payload[%v] data to json error: %v\n", string(message), err)
 		}
 	}
-}
+} // readPump
 
 // writePump pumps messages from the hub to the websocket connection.
 //
@@ -196,11 +197,10 @@ func (c *WSClient) writePump() {
 			}
 		}
 	}
-}
+} //writePump
 
 // handleMessage processes an incoming message, it will prompt for username of password based on the client auth state. Once authenticated if it is
 // necessary, it will process the client message, and add it to the client's history.
-//
 func (c *WSClient) handleMessage(message *ClientMessage) {
 
 	if !c.authenticated {
@@ -215,13 +215,13 @@ func (c *WSClient) handleMessage(message *ClientMessage) {
 				c.Send(SetPrompt("Enter Password: "))
 				return
 
-			} else {
-				c.authenticated = false
-				c.Send(SetAuthenticated(false))
-				c.Send(SetEchoOn(true))
-				c.Send(SetPrompt("Enter Username: "))
-				return
 			}
+			c.authenticated = false
+			c.Send(SetAuthenticated(false))
+			c.Send(SetEchoOn(true))
+			c.Send(SetPrompt("Enter Username: "))
+			return
+
 		}
 
 		if c.app.userAuthenticator(c, c.username, message.Payload) {
@@ -273,7 +273,7 @@ func (c *WSClient) handleMessage(message *ClientMessage) {
 		c.app.handleCommand(c, message.Payload)
 	}
 
-}
+} // handleMessage
 
 // ConvertBytesToMessage converts a byte slice to CLientMessage via json unmarshalling
 func ConvertBytesToMessage(payload []byte) (*ClientMessage, error) {
@@ -323,7 +323,7 @@ func (c *WSClient) ExecLevel() ExecLevel {
 	return c.execLevel
 }
 
-// ExecLevel returns exec level for the client
+// SetExecLevel sets exec level for the client
 func (c *WSClient) SetExecLevel(level ExecLevel) {
 	c.execLevel = level
 }
@@ -338,6 +338,7 @@ func (c *WSClient) StdErr() io.Writer {
 	return c.stdErr
 }
 
+// WriteStdOut writes bytes out to client as normal text
 func (c *WSClient) WriteStdOut(p []byte) (n int, err error) {
 	if len(p) > 0 {
 		c.Send(AppendNormalText(string(p)))
@@ -346,6 +347,7 @@ func (c *WSClient) WriteStdOut(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// WriteStdErr writes bytes out to client as error text
 func (c *WSClient) WriteStdErr(p []byte) (n int, err error) {
 	if len(p) > 0 {
 		c.Send(AppendErrorText(string(p)))
@@ -354,10 +356,12 @@ func (c *WSClient) WriteStdErr(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// WSClientWriter writer for clients
 type WSClientWriter struct {
 	f func(p []byte) (n int, err error)
 }
 
+// Write writer for clients
 func (c *WSClientWriter) Write(p []byte) (n int, err error) {
 	return c.f(p)
 }

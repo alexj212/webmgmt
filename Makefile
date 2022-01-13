@@ -6,7 +6,7 @@ export LATEST_COMMIT := $(shell git log --pretty=format:'%h' -n 1)
 export BRANCH := $(shell git branch |grep -v "no branch"| grep \*|cut -d ' ' -f2)
 export BUILT_ON_IP := $(shell [ $$(uname) = Linux ] && hostname -i || hostname )
 export BIN_DIR=./bin
-export PACKR2_EXECUTABLE := $(shell command -v packr2  2> /dev/null)
+
 
 export BUILT_ON_OS=$(shell uname -a)
 ifeq ($(BRANCH),)
@@ -35,7 +35,6 @@ build_info: check_prereq ## Build the container
 	@echo 'BUILD_NUMBER      $(BUILD_NUMBER)'
 	@echo 'COMPILE_LDFLAGS   $(COMPILE_LDFLAGS)'
 	@echo 'PATH              $(PATH)'
-	@echo 'PACKR2_EXECUTABLE $(PACKR2_EXECUTABLE)'
 	@echo '---------------------------------------------------------'
 	@echo ''
 
@@ -61,42 +60,39 @@ help: ## This help.
 ##
 ####################################################################################################################
 
-vet: ## run go vet on the project
-	go vet .
+tools: ## install dependent tools for code analysis
+	go install github.com/gordonklaus/ineffassign@latest
+	go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+	go install golang.org/x/lint/golint@latest
+	go install github.com/gojp/goreportcard/cmd/goreportcard-cli@latest
+	go install github.com/goreleaser/goreleaser@latest
 
-tools: ## install dependent tools
-	go get -u honnef.co/go/tools/cmd/staticcheck
-	go get -u honnef.co/go/tools/cmd/gosimple
-	go get -u honnef.co/go/tools/cmd/unused
-	go get -u github.com/gordonklaus/ineffassign
-	go get -u github.com/fzipp/gocyclo
-	go get -u github.com/golang/lint/golint
-	go get -u github.com/gobuffalo/packr/v2/packr2
 
-lint: ## run golint on the project
+test: ## run tests
+	go test -v $(PROJ_PATH)
+
+fmt: ## run fmt on project
+	#go fmt $(PROJ_PATH)/...
+	gofmt -s -d -w -l .
+
+doc: ## launch godoc on port 6060
+	godoc -http=:6060
+
+deps: ## display deps for project
+	go list -f '{{ join .Deps  "\n"}}' . |grep "/" | grep -v $(PROJ_PATH)| grep "\." | sort |uniq
+
+lint: ## run lint on the project
 	golint ./...
 
 staticcheck: ## run staticcheck on the project
 	staticcheck -ignore "$(shell cat .checkignore)" .
 
-gosimple: ## run gosimple on the project
-	# gosimple -ignore "$(shell cat .gosimpleignore)" .
-	gosimple .
+vet: ## run go vet on the project
+	go vet .
 
-gocyclo: ## run gocyclo on the project
-	@ gocyclo -avg -over 15 $(shell find . -name "*.go" |egrep -v "pb\.go|_test\.go")
+reportcard: ## run goreportcard-cli
+	goreportcard-cli -v
 
-check: staticcheck gosimple unused gocyclo ## run code checks on the project
-
-doc: ## run godoc
-	godoc -http=:6060
-
-deps:## analyze project deps
-	go list -f '{{ join .Deps  "\n"}}' . |grep "/" | grep -v "$(PROJ_PATH)"| grep "\." | sort |uniq
-
-fmt: ## run fmt on the project
-	## go fmt .
-	gofmt -s -d -w -l .
 
 
 ####################################################################################################################
@@ -114,15 +110,11 @@ create_dir:
 	@ln -s ../web $(BIN_DIR)/web
 
 check_prereq: create_dir
-ifndef PACKR2_EXECUTABLE
-	go get -u github.com/gobuffalo/packr/v2/packr2
-endif
-	$(warning "found packr2")
 
 
 
 build_app: create_dir
-		packr2 build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)
+		go build -o $(BIN_DIR)/$(BIN_NAME) -a -ldflags '$(COMPILE_LDFLAGS)' $(APP_PATH)
 
 
 example: build_info ## build example binary in bin dir
@@ -149,9 +141,6 @@ clean_example: ## clean example
 	make BIN_NAME=example clean_binary
 
 
-
-test: ## run tests
-	go test $(PROJ_PATH)/_test/
 
 
 
