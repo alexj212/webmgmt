@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/alexj212/gox/utilx"
 	"io"
 	"sort"
 	"strings"
@@ -239,7 +240,7 @@ func (c *Command) UsageFunc() (f func(*Command, io.Writer) error) {
 	}
 	return func(c *Command, io io.Writer) error {
 
-		err := tmpl(io, c.UsageTemplate(), c)
+		err := utilx.Tmpl(io, c.UsageTemplate(), c)
 		if err != nil {
 			_, _ = io.Write([]byte(err.Error()))
 		}
@@ -265,7 +266,7 @@ func (c *Command) HelpFunc() func(*Command, []string, Client) {
 	}
 	return func(c *Command, a []string, client Client) {
 
-		err := tmpl(client.StdOut(), c.HelpTemplate(), c)
+		err := utilx.Tmpl(client.StdOut(), c.HelpTemplate(), c)
 		if err != nil {
 			_, _ = client.StdOut().Write([]byte(err.Error()))
 		}
@@ -400,7 +401,7 @@ func (c *Command) SuggestionsFor(typedName string) []string {
 	suggestions := []string{}
 	for _, cmd := range c.commands {
 		if cmd.IsAvailableCommand() {
-			levenshteinDistance := ld(typedName, cmd.Name(), true)
+			levenshteinDistance := utilx.LD(typedName, cmd.Name(), true)
 			suggestByLevenshtein := levenshteinDistance <= c.SuggestionsMinimumDistance
 			suggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))
 			if suggestByLevenshtein || suggestByPrefix {

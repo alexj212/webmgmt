@@ -100,7 +100,7 @@ reportcard: ## run goreportcard-cli
 ## Build of binaries
 ##
 ####################################################################################################################
-all: example test ## build example and run tests
+all: example test ## build examples and run tests
 
 binaries: example ## build binaries in bin dir
 
@@ -140,7 +140,5 @@ clean_binary: ## clean binary in bin dir
 clean_example: ## clean example
 	make BIN_NAME=example clean_binary
 
-
-
-
-
+check_http: ## check http server
+	http http://localhost:1099/admin/version

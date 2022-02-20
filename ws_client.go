@@ -3,6 +3,7 @@ package webmgmt
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/alexj212/gox/httpx"
 	"io"
 	"net/http"
 	"strings"
@@ -315,7 +316,7 @@ func (c *WSClient) Misc() map[string]interface{} {
 
 // Ip returns ip for the client
 func (c *WSClient) Ip() string {
-	return GetIPAddress(c.HttpReq())
+	return httpx.GetIPAddress(c.HttpReq())
 }
 
 // ExecLevel returns exec level for the client

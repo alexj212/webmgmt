@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/alexj212/gox/httpx"
 )
 
 // ForegroundColor default foreground color definition
@@ -65,7 +66,7 @@ func displayUserInfo(client Client, args *CommandArgs) (err error) {
 }
 
 func displayHttpInfo(client Client, args *CommandArgs) (err error) {
-	client.Send(AppendText(fmt.Sprintf("GetIPAdress              : %v", GetIPAddress(client.HttpReq())), "green"))
+	client.Send(AppendText(fmt.Sprintf("GetIPAdress              : %v", httpx.GetIPAddress(client.HttpReq())), "green"))
 	client.Send(AppendText(fmt.Sprintf("client.HttpReq.Host      : %v", client.HttpReq().Host), "green"))
 	client.Send(AppendText(fmt.Sprintf("client.HttpReq.Method    : %v", client.HttpReq().Method), "green"))
 	client.Send(AppendText(fmt.Sprintf("client.HttpReq.RemoteAddr: %v", client.HttpReq().RemoteAddr), "green"))

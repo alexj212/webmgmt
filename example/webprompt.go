@@ -2,26 +2,20 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
-	"log"
 	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/potakhov/loge"
 
 	"github.com/alexj212/webmgmt"
 )
 
-func setup(router *mux.Router, fs fs.FS) (mgmtApp *webmgmt.MgmtApp, err error) {
+func initializeWebUi(userName, password string) (mgmtApp *webmgmt.MgmtApp, err error) {
 	cmds := &webmgmt.Command{}
 	//## Initialization
 	// 1. Create a Config struct and set the template path to ./web
 	// 2. Set the DefaultPrompt
 	// 3. Set the Webpath that will be used to access the terminal via a browser
 
-	config := &webmgmt.Config{FileSystem: fs}
+	config := &webmgmt.Config{}
 	config.DefaultPrompt = "$"
-	config.WebPath = "/admin/"
 
 	// ## ClientInitialization
 	// The Client initialization func is invoked when a client connects to the system. The handler func can access and modify the
@@ -52,7 +46,7 @@ func setup(router *mux.Router, fs fs.FS) (mgmtApp *webmgmt.MgmtApp, err error) {
 	//    1. Set the User Auth function, This function will have access to the Client interface, where you can access the IP, http Request etc.
 	//    The submitted username and password will also be passed to validate the session. Function returns the state of authentication
 	config.UserAuthenticator = func(client webmgmt.Client, s string, s2 string) bool {
-		return s == "alex" && s2 == "bambam"
+		return s == userName && s2 == password
 	}
 
 	// #Post Authentication
@@ -60,7 +54,7 @@ func setup(router *mux.Router, fs fs.FS) (mgmtApp *webmgmt.MgmtApp, err error) {
 	config.NotifyClientAuthenticated = func(client webmgmt.Client) {
 		client.SetExecLevel(webmgmt.ADMIN)
 		client.Send(webmgmt.SetPrompt("$ "))
-		loge.Info("New user authenticated on system: %v", client.Username())
+		fmt.Printf("New user authenticated on system: %v", client.Username())
 	}
 
 	// #Post Authentication Failure
@@ -68,7 +62,7 @@ func setup(router *mux.Router, fs fs.FS) (mgmtApp *webmgmt.MgmtApp, err error) {
 
 	config.NotifyClientAuthenticatedFailed = func(client webmgmt.Client) {
 
-		loge.Info("user auth failed on system: %v - %v", client.Username(), client.Ip())
+		fmt.Printf("user auth failed on system: %v - %v", client.Username(), client.Ip())
 	}
 
 	cmd := &webmgmt.Command{
@@ -223,31 +217,31 @@ console.log('done');
 	config.HandleCommand = webmgmt.HandleCommands(cmds)
 
 	config.UnregisterUser = func(client webmgmt.Client) {
-		loge.Info("user logged off system: %v", client.Username())
+		fmt.Printf("user logged off system: %v", client.Username())
 	}
 
-	mgmtApp, err = webmgmt.NewMgmtApp("testapp", "1", config, router)
+	mgmtApp, err = webmgmt.NewMgmtApp(config)
 	return
 }
 
 func lines(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) {
 
-	//log.Printf("lines CmdName: %v", args.CmdName)
-	//log.Printf("lines CmdLine: %v", args.CmdLine)
-	//log.Printf("lines Args: %v", args.Args)
-	//log.Printf("lines FlagSet.Args: %v", args.FlagSet.Args())
-	//log.Printf("lines Debug: %v", args.Debug())
+	//fmt.Printf("lines CmdName: %v", args.CmdName)
+	//fmt.Printf("lines CmdLine: %v", args.CmdLine)
+	//fmt.Printf("lines Args: %v", args.Args)
+	//fmt.Printf("lines FlagSet.Args: %v", args.FlagSet.Args())
+	//fmt.Printf("lines Debug: %v", args.Debug())
 
 	cnt := args.FlagSet.Int("cnt", 5, "number of lines to print")
 	err = args.Parse()
-	log.Printf("lines err: %v", err)
+	fmt.Printf("lines err: %v", err)
 	if err != nil {
 		return
 	}
 
-	log.Printf("lines cnt: %v", *cnt)
+	fmt.Printf("lines cnt: %v", *cnt)
 	client.Send(webmgmt.AppendText(fmt.Sprintf("lines invoke"), "green"))
-	log.Printf("lines invoked")
+	fmt.Printf("lines invoked")
 	for i := 0; i < *cnt; i++ {
 		txt := fmt.Sprintf("line[%d]", i)
 		client.Send(webmgmt.AppendText(txt, "green"))
@@ -281,18 +275,18 @@ func toggleTicker(client webmgmt.Client, args *webmgmt.CommandArgs) (err error) 
 				select {
 
 				case <-done:
-					loge.Info("Ticker Done")
+					fmt.Printf("Ticker Done")
 					return
 
 				case t := <-ticker.C:
-					loge.Info("Ticker ticked")
+					fmt.Printf("Ticker ticked")
 					if client.IsAuthenticated() {
 						msg := fmt.Sprintf("Tick at: %v", t)
 						client.Send(webmgmt.AppendText(msg, "blue"))
 					}
 				}
 			}
-			loge.Info("Ticker Stopped")
+			fmt.Printf("Ticker Stopped")
 			ticker.Stop()
 		}()
 

@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- DATATABLE -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/dataTables.bootstrap4.min.css">
+
+    <title>Log Viewer</title>
+
+    <style type="text/css">
+        html, body {
+            height: 100%;
+            font-size: 8px;
+        }
+
+        #content {
+            position: fixed;
+            overflow: auto;
+            top: 65px;
+            bottom: 65px;
+            left: 10px;
+            right: 10px;
+            class: "w-90";
+        }
+
+        .loglevel_trace {
+            background-color: #6897BB;
+            color: black;
+        }
+
+        .loglevel_debug {
+            background-color: #6A8759;
+            color: black;
+        }
+
+        .loglevel_info {
+            background-color: #BBB529;
+            color: black;
+        }
+
+        .loglevel_warn {
+            background-color: #9876AA;
+            color: black;
+        }
+
+        .loglevel_error {
+            background-color: #FF6B68;
+            color: black;
+        }
+
+        .timeColumn {
+            width: 10%;
+        }
+
+        .levelColumn {
+            width: 5%
+        }
+
+        .messageColumn {
+            width: 80%;
+        }
+
+        dt {
+            float: left;
+            clear: left;
+            width: 6em;
+            font-weight: bold;
+        }
+
+        dd {
+            float: left;
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <header class="fixed-top">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div id="filters" class="flex-grow-1 d-flex">
+                <div class="form-inline flex-nowrap bg-light mx-0 mx-lg-auto rounded p-1">
+                    <label for="logLevel">Log Level&nbsp;</label>
+                    <select id="logLevel" class="browser-default custom-select">
+                        <option value="TRACE">TRACE</option>
+                        <option value="DEBUG">DEBUG</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARNING">WARNING</option>
+                        <option value="ERROR">ERROR</option>
+                        <option selected value="ALL">ALL</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+
+    </header>
+
+    <!-- Begin page content -->
+    <div id="content">
+
+        <table class="table table-hover table-bordered text-left nowrap" id="logTable">
+            <thead>
+            <tr class="text-left">
+                <th class="timeColumn" scope="col">Time</th>
+                <th class="levelColumn" scope="col">Level</th>
+                <th class="messageColumn" scope="col">Message</th>
+            </tr>
+            </thead>
+            <tbody class="text-left">
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="fixed-bottom  w-100">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="flex-grow-1 d-flex">
+                <button onclick="clearLog();" class="btn btn-outline-success">Clear</button>
+            </div>
+
+            <!--
+            <div class="flex-grow-1 d-flex"></div>
+            <div class="flex-grow-1 d-flex"></div>
+            <div class="flex-grow-1 d-flex"></div>
+
+
+            <div class="flex-grow-1 d-flex">
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input" id="cbJumpToTop"
+                           onclick="updateJumpToTop(this);">
+                    <label class="custom-control-label" for="cbJumpToTop" id="cbJumpToTopLabel">Jump to top on
+                        update</label>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 d-flex">
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input" id="cbAddToTop"
+                           onclick="updateAddToTop(this);">
+                    <label class="custom-control-label" for="cbAddToTop" id="cbAddToTopLabel">Add To Top</label>
+                </div>
+            </div>
+            -->
+        </nav>
+    </footer>
+
+
+    <div id="logEntryDetailModal" class="modal hide fade" role="dialog" aria-labelledby="logEntryDetailModalLabel"
+         aria-hidden="true" tabindex='-1'>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h5 class="modal-title font-weight-bold" id="logEntryModalTitleLabel">Log Entry Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <!-- Modal body -->
+                <div id="logEntryDetails" class="modal-body"></div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+
+<!-- DATATABLE -->
+<script type="text/JavaScript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/JavaScript" src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
+<script>
+
+    let logLevel = -1;
+    let filters = {};
+    let JumpToTop = true;
+    let AddToTop = true;
+    let line = 0;
+    let logTable;
+
+    $(document).ready(function () {
+        initialize();
+    });
+
+    function initialize() {
+        let loc = window.location;
+        let endpoint;
+        if (loc.protocol === "https:") {
+            endpoint = "wss:";
+        } else {
+            endpoint = "ws:";
+        }
+        endpoint += "//" + loc.host + "/wslogger";
+
+        console.log('endpoint: ' + endpoint);
+
+        let ws = new WebSocket(endpoint);
+        ws.addEventListener('open', function (event) {
+            console.log('ws.open', event);
+        });
+
+        ws.addEventListener('message', function (event) {
+            /*
+            {"time":"2020-05-22T15:40:50.56012434Z","msg":"/wslogger invoked","level":"info"}
+            {"time":"2020-05-22T15:40:51.102213144Z","msg":"error log message 10335","level":"error","data":{"uid":84}}
+            {"time":"2020-05-22T15:40:52.102354792Z","msg":"error log message 10336","level":"error","data":{"uid":84}}
+            {"time":"2020-05-22T15:40:53.102189512Z","msg":"debug log message 10337","level":"debug","data":{"uid":13564536}}
+            */
+            //console.log(event.data);
+            let logMessage = JSON.parse(event.data);
+            updateFilters(logMessage.data);
+            displayLogMessage(logMessage);
+        });
+
+        ws.addEventListener('close', function (event) {
+            console.log('ws.close', event);
+        });
+
+
+        $('#cbJumpToTop').attr("checked", JumpToTop);
+        $('#cbAddToTop').attr("checked", AddToTop)
+
+
+        $('#logLevel').change(function () {
+            let logLevelTxt = $(this).find("option:selected").text();
+            logLevel = getLogLevel(logLevelTxt);
+            updateTable();
+        });
+
+
+        logTable = $('#logTable').DataTable({
+            "paging": true,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": false,
+            "info": true,
+            "autoWidth": false,
+            "scrollY": "60vh",
+            "pageLength": 25,
+
+            columns: [
+
+                {
+                    data: 'date',
+                    render: function (data, type, row, meta) {
+                        return data;
+                    }
+                },
+                {
+                    data: 'levelStr',
+                    render: function (data, type, row, meta) {
+                        return data;
+                    }
+                },
+                {
+                    data: 'msg',
+                    render: function (data, type, row, meta) {
+                        return data;
+                    }
+                },
+                {
+                    data: 'line',
+                    "visible": false,
+                    "orderable": true,
+                    render: function (data, type, row, meta) {
+                        return data;
+                    }
+                }
+            ],
+        });
+
+
+        $('#logTable').on('click', 'tr', function () {
+            let logMessage = logTable.row(this).data();
+            // console.log(`logTable click name: ${time} - ${level} - ${message}`, data);
+
+            let info = `<div class="${logMessage.rowColor}">${logMessage.levelStr}</div>`;
+            info = info + '<b>Log Details ' + logMessage.date + '</b><hr/><br/>' + logMessage.msg;
+            info = info + "<hr/><br/>";
+
+            if (logMessage.data && Object.keys(logMessage.data).length > 0) {
+                info = info + "<dl>";
+                for (let key in logMessage.data) {
+                    let value = logMessage.data[key];
+                    info = info + '<dt>' + key + '</dt><dd>' + value + '</dd>';
+                }
+                info = info + "</dl>";
+            }
+
+            //console.log(`logTable click name: ${info}`);
+            $('#logEntryDetails').html($(info));
+            $('#logEntryDetailModal').modal("show");
+        });
+    }
+
+    function updateJumpToTop(cb) {
+        JumpToTop = cb.checked;
+        console.log("JumpToTop: " + JumpToTop);
+    }
+
+    function updateAddToTop(cb) {
+        clearLog();
+        AddToTop = cb.checked;
+        console.log("AddToTop: " + AddToTop);
+        if (AddToTop) {
+            $('#cbJumpToTopLabel').text("Jump to top on update");
+        } else {
+            $('#cbJumpToTopLabel').text("Jump to bottom on update");
+        }
+    }
+
+
+    function clearLog() {
+        console.log('clearLog');
+        logTable.clear().draw();
+    }
+
+    function updateFilters(data) {
+
+        for (let key in data) {
+            let value = data[key];
+            updateFilter(key, value);
+        }
+    }
+
+    function updateTable() {
+        //console.log('updateTable ');
+
+        $.fn.dataTable.ext.search.push(
+            function (settings, data, dataIndex) {
+
+                if (settings.nTable.id !== 'logTable') {
+                    return true;
+                }
+
+                let rowData = logTable.row(dataIndex).data();
+                let show = shouldShowRow(rowData.data, rowData.level);
+                return show;
+            }
+        );
+        logTable.draw();
+
+    }
+
+    function shouldShowRow(data, level) {
+
+
+        if (logLevel >= 0 && logLevel > level) {
+            //console.log("filter table selected level:"+logLevel+"  row level:"+ level, data);
+            return false;
+        }
+        let show = checkFilters(data)
+        if (!show) {
+            //console.log("filter table selected level:"+logLevel+"  row level:"+ level, data);
+        }
+
+        return show;
+    }
+
+    function checkFilters(mesgOptions) {
+        let activeFilters = 0;
+        for (let key in filters) {
+            let val = filters[key];
+            if (val !== "ALL") {
+                activeFilters++
+            }
+        }
+
+        if ("undefined" === typeof (mesgOptions) && activeFilters == 0) {
+            return true;
+        } else if ("undefined" === typeof (mesgOptions) && activeFilters > 0) {
+            return false;
+        }
+
+        for (let key in filters) {
+            let val = filters[key];
+            if (val === "ALL") {
+                continue
+            }
+
+            if ("undefined" === typeof (mesgOptions[key])) {
+                // The property DOESN'T exists
+                return false;
+            } else {
+                // The property exists
+                let value = "" + mesgOptions[key];
+                if (val !== value) {
+                    //console.log("checkFilters failed", {mesgOptions, filters})
+                    return false;
+                }
+            }
+        }
+        //console.log("checkFilters success", {mesgOptions, filters})
+        return true;
+    }
+
+
+    function updateFilter(filterName, value) {
+        getOrCreateFilter(filterName);
+        let optionExists = ($('#filter_' + filterName + ' option[value=' + value + ']').length > 0);
+
+
+        if (!optionExists) {
+            //console.log(`${filterName} Adding option ${value}`)
+            $('#filter_' + filterName).append("<option value='" + value + "'>" + value + "</option>");
+        }
+    }
+
+    function getLogLevel(logLevelTxt) {
+        if (logLevelTxt === undefined) {
+            return 2; // info level
+        }
+
+        logLevelTxt = logLevelTxt.toLowerCase();
+        let logLevel;
+        if (logLevelTxt === "all") {
+            logLevel = -1;
+        } else if (logLevelTxt === "trace") {
+            logLevel = 0;
+        } else if (logLevelTxt === "debug") {
+            logLevel = 1;
+        } else if (logLevelTxt === "info") {
+            logLevel = 2;
+        } else if (logLevelTxt === "warning") {
+            logLevel = 3;
+        } else if (logLevelTxt === "error") {
+            logLevel = 4;
+        } else {
+            logLevel = -1;
+        }
+        return logLevel;
+    }
+
+    function displayLogMessage(logMessage) {
+        if (logMessage === null) {
+            return
+        }
+
+        let level = getLogLevel(logMessage.level);
+        let levelStr;
+
+        let time = new Date(logMessage.time);
+
+        let rowColor;
+        if (level === 0) { //trace
+            rowColor = 'loglevel_trace';
+            levelStr = "TRACE";
+        } else if (level === 1) { //debug
+            rowColor = 'loglevel_debug';
+            levelStr = "DEBUG";
+        } else if (level === 2) { //info
+            rowColor = 'loglevel_info';
+            levelStr = "INFO";
+        } else if (level === 3) { //warning
+            rowColor = 'loglevel_warn';
+            levelStr = "WARN";
+        } else { //error
+            rowColor = 'loglevel_error';
+            levelStr = "ERROR";
+        }
+
+        line++;
+
+        let date = formatDate(time, "MM/dd/yyyy - hh:mm:ss TT");
+
+
+        logMessage.date = date;
+        logMessage.levelStr = levelStr;
+        logMessage.level = level;
+
+        logMessage.line = line;
+        logMessage.rowColor = rowColor;
+        logMessage.lineInt = line;
+
+
+        let row = logTable.row.add(logMessage).draw(false).node();
+        //console.log('row', row);
+        //console.log('$( row )', $(row));
+
+        $(row).addClass(rowColor);
+        logTable.order([3, 'desc']).draw();
+    }
+
+
+    function getOrCreateFilter(name) {
+        let filterComponent = $('#filter_' + name);
+        if (filterComponent.length) {
+            return filterComponent;
+        } else {
+            $('#filters').append(`
+ <div class="form-inline flex-nowrap bg-light mx-0 mx-lg-auto rounded p-1">
+    <label for="filter_${name}">${name}&nbsp;&nbsp;</label>
+    <select id="filter_${name}" class="browser-default custom-select">
+        <option selected value="ALL">ALL</option>
+    </select>
+</div>
+            `);
+
+            filterComponent = $('#filter_' + name);
+            filters[name] = "ALL";
+
+            filterComponent.change(function () {
+                let filterVal = $(this).find("option:selected").text();
+                console.log(`setting filter ${name} val=${filterVal}`);
+                filters[name] = filterVal;
+                console.log("filters", filters);
+                updateTable();
+            });
+
+            return filterComponent;
+        }
+    }
+
+
+    function formatDate(date, format, utc) {
+        let MMMM = ["\x00", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let MMM = ["\x01", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let dddd = ["\x02", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        let ddd = ["\x03", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        function ii(i, len) {
+            let s = i + "";
+            len = len || 2;
+            while (s.length < len) s = "0" + s;
+            return s;
+        }
+
+        let y = utc ? date.getUTCFullYear() : date.getFullYear();
+        format = format.replace(/(^|[^\\])yyyy+/g, "$1" + y);
+        format = format.replace(/(^|[^\\])yy/g, "$1" + y.toString().substr(2, 2));
+        format = format.replace(/(^|[^\\])y/g, "$1" + y);
+
+        let M = (utc ? date.getUTCMonth() : date.getMonth()) + 1;
+        format = format.replace(/(^|[^\\])MMMM+/g, "$1" + MMMM[0]);
+        format = format.replace(/(^|[^\\])MMM/g, "$1" + MMM[0]);
+        format = format.replace(/(^|[^\\])MM/g, "$1" + ii(M));
+        format = format.replace(/(^|[^\\])M/g, "$1" + M);
+
+        let d = utc ? date.getUTCDate() : date.getDate();
+        format = format.replace(/(^|[^\\])dddd+/g, "$1" + dddd[0]);
+        format = format.replace(/(^|[^\\])ddd/g, "$1" + ddd[0]);
+        format = format.replace(/(^|[^\\])dd/g, "$1" + ii(d));
+        format = format.replace(/(^|[^\\])d/g, "$1" + d);
+
+        let H = utc ? date.getUTCHours() : date.getHours();
+        format = format.replace(/(^|[^\\])HH+/g, "$1" + ii(H));
+        format = format.replace(/(^|[^\\])H/g, "$1" + H);
+
+        let h = H > 12 ? H - 12 : H === 0 ? 12 : H;
+        format = format.replace(/(^|[^\\])hh+/g, "$1" + ii(h));
+        format = format.replace(/(^|[^\\])h/g, "$1" + h);
+
+        let m = utc ? date.getUTCMinutes() : date.getMinutes();
+        format = format.replace(/(^|[^\\])mm+/g, "$1" + ii(m));
+        format = format.replace(/(^|[^\\])m/g, "$1" + m);
+
+        let s = utc ? date.getUTCSeconds() : date.getSeconds();
+        format = format.replace(/(^|[^\\])ss+/g, "$1" + ii(s));
+        format = format.replace(/(^|[^\\])s/g, "$1" + s);
+
+        let f = utc ? date.getUTCMilliseconds() : date.getMilliseconds();
+        format = format.replace(/(^|[^\\])fff+/g, "$1" + ii(f, 3));
+        f = Math.round(f / 10);
+        format = format.replace(/(^|[^\\])ff/g, "$1" + ii(f));
+        f = Math.round(f / 10);
+        format = format.replace(/(^|[^\\])f/g, "$1" + f);
+
+        let T = H < 12 ? "AM" : "PM";
+        format = format.replace(/(^|[^\\])TT+/g, "$1" + T);
+        format = format.replace(/(^|[^\\])T/g, "$1" + T.charAt(0));
+
+        let t = T.toLowerCase();
+        format = format.replace(/(^|[^\\])tt+/g, "$1" + t);
+        format = format.replace(/(^|[^\\])t/g, "$1" + t.charAt(0));
+
+        let tz = -date.getTimezoneOffset();
+        let K = utc || !tz ? "Z" : tz > 0 ? "+" : "-";
+        if (!utc) {
+            tz = Math.abs(tz);
+            let tzHrs = Math.floor(tz / 60);
+            let tzMin = tz % 60;
+            K += ii(tzHrs) + ":" + ii(tzMin);
+        }
+        format = format.replace(/(^|[^\\])K/g, "$1" + K);
+
+        let day = (utc ? date.getUTCDay() : date.getDay()) + 1;
+        format = format.replace(new RegExp(dddd[0], "g"), dddd[day]);
+        format = format.replace(new RegExp(ddd[0], "g"), ddd[day]);
+
+        format = format.replace(new RegExp(MMMM[0], "g"), MMMM[M]);
+        format = format.replace(new RegExp(MMM[0], "g"), MMM[M]);
+
+        format = format.replace(/\\(.)/g, "$1");
+
+        return format;
+    }
+</script>
+</body>
+</html>
