@@ -5,7 +5,7 @@ go 1.17
 // replace github.com/alexj212/gox => ../../../../../../../home/alexj/local/gox
 
 require (
-	github.com/alexj212/gox v0.0.0-20220220175700-8d263a063e80
+	github.com/alexj212/gox v0.0.0-20220220190923-4e49efc47a5e
 	github.com/droundy/goopt v0.0.0-20220217183150-48d6390ad4d1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gorilla/handlers v1.5.1

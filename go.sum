@@ -1,5 +1,7 @@
 github.com/alexj212/gox v0.0.0-20220220175700-8d263a063e80 h1:hOLLf1HjxNq16SFoMGcpQgN+5Ba8NB5+bLzcnsLNlUs=
 github.com/alexj212/gox v0.0.0-20220220175700-8d263a063e80/go.mod h1:pMjoX9rr4VQlSI37iFqMgNuTDgVjkIdv37nWIXucjg8=
+github.com/alexj212/gox v0.0.0-20220220190923-4e49efc47a5e h1:KRycVvVN+wNuM1JsUGwYYUBnWsvSiQSl8uZdOb0hJqw=
+github.com/alexj212/gox v0.0.0-20220220190923-4e49efc47a5e/go.mod h1:+pr57EweN//bFeDzyyf31OK0S75ErsP6v9AWY6CsDyk=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
