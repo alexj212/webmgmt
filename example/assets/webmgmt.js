@@ -57,7 +57,8 @@ WebMgmt = {
 
         if (arg.ClosedCallback) {
           arg.ClosedCallback();
-        }
+        }exit
+
       });
     };
 
