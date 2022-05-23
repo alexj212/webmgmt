@@ -119,7 +119,8 @@ build_app: create_dir
 
 example: build_info ## build example binary in bin dir
 	@echo "build 1"
-	make BIN_NAME=example APP_PATH=github.com/alexj212/webmgmt/example build_app
+	@cd  example
+	make BIN_NAME=example APP_PATH=. build_app
 	@echo ''
 	@echo ''
 
